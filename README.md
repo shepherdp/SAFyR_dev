@@ -32,20 +32,28 @@ Right now, variables are all dynamically typed, and types are assumed from value
 In the future, variable assignment will look the same, but also different.  By default, the language will assume that everything is to be dynamically typed, but you can use a keyword to change that default to static typing.  You will still be able to create dynamically typed variables under the static-type setting, and you will be able to create statically typed variables in the dynamic-type setting.  Here is how that might look:
 
     a = 5              # a is a dynamically typed integer 
-    <int> b = 5        # b is a statically typed integer
+    int b = 5          # b is a statically typed integer
     a = "Hello"        # a changes to a string
     b = "Hello"        # b throws an error because "Hello" is not an int
+    b = 5.75           # b will now equal the integer 5 due to truncation as a result of static typing
+    int b = 5.75       # b again throws an error because a type specifier is used when b is already marked as static
 
 In the example above, no keyword was provided at the top of the file for static typing, so variables are assumed to be dynamic unless specified otherwise with the type enclosed in `<>` preceding the variable name.
 
     use static
 
     a = 5              # a is a statically typed integer 
-    <var> b = 5        # b is a dynamically typed integer
+    var b = 5          # b is a dynamically typed integer
     a = "Hello"        # a throws an error because "Hello" is not an int
     b = "Hello"        # b changes to a string
 
 In this example, including the line `use static` at the top of the file enforces automatic static typing for all variables.  If you do want a dynamically typed variable, then you initialize it with `<var>` before the name.  The same will be true of container data structures -- lists, maps, etc. can hold any collection of elements of any type by default, but you can also enforce lists containing only elements of a single type, or that maps can only accept keys and values of certain types.  I believe this will be convenient because, in many applications, there are variables that you expect to have a specific structure and/or format, and it is nice to be able to enforce that structure, but other times you just need variables that can be whatever for a while.  I believe that creating a language that incorporates both will be advantageous, and time will tell if I am correct.
+
+Variables can also be defined as constant with the `const` keyword preceding the optional variable type.  Doing so will cause any and all attempts to assign a value to that variable to throw an error, even if you are only assigning the exact same value to that variable.
+
+    const int a = 5    # a is a constant integer equal to 5
+    a = 10             # a throws an error because it is constant
+    a = 5              # a will still throw an error, even if its value would not change    
 
 ### Builtin Types
 
