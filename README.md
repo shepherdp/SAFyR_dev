@@ -23,72 +23,87 @@ My main goal for SAFyR is to learn how to create a programming language.  That b
 ## Coding in SAFyR
 Here is some basic functionality for SAFyR.  This part of the document will be continually updated as new features are implemented and tested.
 
+### Comments
+Single-line comments in SAFyR start with `;`.  Anything from a single semicolon to a newline character will be entirely ignored at the level of the lexer.  Multi-line comments are also supported, but are enclosed at the beginning and end by `;;`.  Here is a quick example:
+
+    ; this is a comment that ends as soon as I go to the next line
+    ;; this is a comment that can just go on and on
+       and on and on
+       and on and on
+
+       and on until I close it with these two semicolons ;;
+
 ### Variables
-Right now, variables are all dynamically typed, and types are assumed from values.
-    
-    a = 5              # a is an integer with value 5
-    a = 10.            # now a is a float with value 10.0
+Variables come in all the typical flavors:
 
-In the future, variable assignment will look the same, but also different.  By default, the language will assume that everything is to be dynamically typed, but you can use a keyword to change that default to static typing.  You will still be able to create dynamically typed variables under the static-type setting, and you will be able to create statically typed variables in the dynamic-type setting.  Here is how that might look:
-
-    a = 5              # a is a dynamically typed integer 
-    int b = 5          # b is a statically typed integer
-    a = "Hello"        # a changes to a string
-    b = "Hello"        # b throws an error because "Hello" is not an int
-    b = 5.75           # b will now equal the integer 5 due to truncation as a result of static typing
-    int b = 5.75       # b again throws an error because a type specifier is used when b is already marked as static
-
-In the example above, no keyword was provided at the top of the file for static typing, so variables are assumed to be dynamic unless specified otherwise with the type enclosed in `<>` preceding the variable name.
-
-    use static
-
-    a = 5              # a is a statically typed integer 
-    var b = 5          # b is a dynamically typed integer
-    a = "Hello"        # a throws an error because "Hello" is not an int
-    b = "Hello"        # b changes to a string
-
-In this example, including the line `use static` at the top of the file enforces automatic static typing for all variables.  If you do want a dynamically typed variable, then you initialize it with `<var>` before the name.  The same will be true of container data structures -- lists, maps, etc. can hold any collection of elements of any type by default, but you can also enforce lists containing only elements of a single type, or that maps can only accept keys and values of certain types.  I believe this will be convenient because, in many applications, there are variables that you expect to have a specific structure and/or format, and it is nice to be able to enforce that structure, but other times you just need variables that can be whatever for a while.  I believe that creating a language that incorporates both will be advantageous, and time will tell if I am correct.
-
-Variables can also be defined as constant with the `const` keyword preceding the optional variable type.  Doing so will cause any and all attempts to assign a value to that variable to throw an error, even if you are only assigning the exact same value to that variable.
-
-    const int a = 5    # a is a constant integer equal to 5
-    a = 10             # a throws an error because it is constant
-    a = 5              # a will still throw an error, even if its value would not change    
-
-### Builtin Types
-
-SAFyR has typical builtin types:
 * Integer    (INT)
 * Float      (FLT)
 * String     (STR)
 * List       (LST)
 * Map        (MAP)
 
+Initializing a variable works very similarly to other languages:
+    
+    a = 5              ; a is an integer with value 5
+    b = 10.            ; b is a float with value 10.0
+    c = "a string"     ; c is a string with the text "a string"
+    d = [1 2]          ;; d is a list containing the values 1 and 2.
+                          note that values are whitespace-separated, NOT comma-separated ;;
+
+SAFyR is a dynamically typed language by default.  This means any variable can take on any value.  Even if you initialize a variable to an integer value, for instance, you can reassign it to a string on the next line.  This default can be toggled on and off.  Using a statement at the top of your main file will instead set the environment to be statically-typed by default.  Within either of these conditions, variables can be explicitly initialized as either statically or dynamically typed.  Here are some examples:
+
+    ;; no keyword at top, so file is dynamically typed by default ;;
+    
+    a = 5              ; a is a dynamically typed integer 
+    int b = 5          ; b is a statically typed integer
+    a = "Hello"        ; a changes to a string
+    b = "Hello"        ; b throws an error because "Hello" is not an int
+    b = 5.75           ; b will now equal the integer 5 due to truncation as a result of static typing
+    int b = 5.75       ; b again throws an error because a type specifier is used when b is already marked as static
+
+In the example above, no keyword was provided at the top of the file for static typing, so variables are assumed to be dynamic unless specified otherwise with the type enclosed in `<>` preceding the variable name.
+
+    ;; static keyword invoked at top, so file is statically typed by default ;;
+    use static
+
+    a = 5              ; a is a statically typed integer 
+    var b = 5          ; b is a dynamically typed integer
+    a = "Hello"        ; a throws an error because "Hello" is not an int
+    b = "Hello"        ; b changes to a string
+
+In this example, including the line `use static` at the top of the file enforces automatic static typing for all variables.  If you do want a dynamically typed variable, then you initialize it with `<var>` before the name.  The same will be true of container data structures -- lists, maps, etc. can hold any collection of elements of any type by default, but you can also enforce lists containing only elements of a single type, or that maps can only accept keys and values of certain types.  I believe this will be convenient because, in many applications, there are variables that you expect to have a specific structure and/or format, and it is nice to be able to enforce that structure, but other times you just need variables that can be whatever for a while.  I believe that creating a language that incorporates both will be advantageous, and time will tell if I am correct.
+
+Variables can also be defined as constant with the `const` keyword preceding the optional variable type.  Doing so will cause any and all attempts to assign a value to that variable to throw an error, even if you are only assigning the exact same value to that variable.
+
+    const int a = 5    ; a is a constant integer equal to 5
+    a = 10             ; a throws an error because it is constant
+    a = 5              ; a will still throw an error, even if its value would not change
+
 ### Operators
 SAFyR provides all the typical operators for a programming language (+, -, *, /, %, and ^ for exponentiation, as well as the same operators followed by '=') as well as a few others.  The '@' operator is used for element access (equivalent to the `[idx]` in `mylist[idx]`), and can be used on any data type.  Lists and strings also have access to the 'sliceleft' and 'sliceright' (`</` and `/>`)operators, which allow you to grab the leftmost or rightmost portions of the value.  Lists and strings also have specific behaviors relative to many of the basic operators.
 
     # operator examples
     a = 5
-    b = a + 6          # b = 11; all basic operators work as expected on numbers
-    b += 9             # b = 20; accumulation operators also work as expected
+    b = a + 6          ; b = 11; all basic operators work as expected on numbers
+    b += 9             ; b = 20; accumulation operators also work as expected
 
-    a = [1 2 3]        # a is a list of ints
-    a = a + 4          # a = [1 2 3 4]; + appends an element to a list
-    a = a + [7 8]      # a = [1 2 3 4 [7 8]]; any element can be appended to a list
+    a = [1 2 3]        ; a is a list of ints
+    a = a + 4          ; a = [1 2 3 4]; + appends an element to a list
+    a = a + [7 8]      ; a = [1 2 3 4 [7 8]]; any element can be appended to a list
 
     a = [1 2 3]
-    a -= 2             # a = [1 3]; subraction removes an element from a list
+    a -= 2             ; a = [1 3]; subraction removes an element from a list
     a = [1 2 2 2 3]
-    a = a - 2          # a = [1 3]; subtraction removes all instances of an element from a list
+    a = a - 2          ; a = [1 3]; subtraction removes all instances of an element from a list
 
     a = [1 2]
     b = [3 4]
-    c = a * b          # c = [[1 3] [2 4]]; multiplication zips two lists (must be the same size)
+    c = a * b          ; c = [[1 3] [2 4]]; multiplication zips two lists (must be the same size)
 
     a = [1 2 3 2 4]
-    b = a / 2          # b = [[1] [3] [4]]; division splits list based on operand value
+    b = a / 2          ; b = [[1] [3] [4]]; division splits list based on operand value
 
-    c = a ^ b          # c = [[1 3] [1 4] [2 3] [2 4]]; exponentiation returns the cartesian product of two lists
+    c = a ^ b          ; c = [[1 3] [1 4] [2 3] [2 4]]; exponentiation returns the cartesian product of two lists
 
 
 ## Acknowledgements
