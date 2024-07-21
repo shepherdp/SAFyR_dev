@@ -119,16 +119,30 @@ Structs in SAFyR are, in their simplest form, collections of variables just like
     }
 
     ;; here I define a new type called 'Fraction' that takes two parameters, a and b, and sets the
-       instance properties, num and den, to those respective values: ;;
+       instance properties, num and den, to those respective values.  I then create a variable
+       called 'myfrac' of that type, and initialize it with the values 7 and 4. ;;
        
     :Fraction [a b] {
         num = a
         den = b
     }
 
+    myfrac = Fraction(7 4)
+    print(myfrac)
+
+    >>> <struct Fraction> {'num': 7, 'den': 4}
+
 ### Basic Control Flow
 
-### Functions
+#### Conditionals
+
+#### While Loops
+
+#### For Loops
+
+#### When Triggers
+
+#### Functions
 
 ## Acknowledgements
 My biggest thank you needs to go to the great mind behind [CodePulse](https://www.youtube.com/@CodePulse).  Before taking on this project, I had never built a programming language at all.  I had written some scripts that could parse and emulate Assembly, but that is a far stretch from a full high level language.  I found his series on YouTube about building your own programming language, and I followed it step by step so I could learn how the whole process works, so basically the entire skeleton of the language is his code.  Once I got done with his tutorial and I saw how everything fits together, I wanted to completely build out the language with many new features.  I have already learned a great deal about language design, and have come across some surprising facts in doing so (e.g. static vs. dynamic typing can literally be implemented with one single line of code).  I have also gotten the chance to get creative with parts of the implementation -- for one, I completely rewrote the lexer to be a finite state machine programmable via text file, so you can change the definitions of tokens at will.  I appreciate anyone who takes the time to learn my language, and accepts it for the learning journey it is.  Again, all credit for the foundations of this language belongs exclusively to CodePulse.  Thank you so much to him for helping me learn how all of this works, and I hope I can do his code justice by building something awesome on top of it!
