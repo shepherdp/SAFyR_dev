@@ -9,10 +9,8 @@ This repo houses the source code for SAFyR, my brand new programming language!  
 My main goal for SAFyR is to learn how to create a programming language.  That being said, I don't see why I can't explore the implementation of a wide range of features while I'm at it.  At its core, I would like SAFyR to be a fairly simple and lightweight language.  At the moment, I don't see implementing large projects in it.  It may evolve into something completely capable of that, though.  My second goal with this language is to be concise.  On the one hand, I want simple and easily readable syntax like is seen in Python (which incidentally is the language that SAFyR is being written in).
 
 ## List of Features to Implement Before Initial Release
-* Programs include variable-specific static and and dynamic typing
 * New operators (ex. mylist </ 3 returns the first 3 elements of mylist, and mylist </ 3returns the last 3 elements)
 * Multiple return values
-* All keywords have full versions as well as shorthand versions (e.g. if, elif, and else can be replaced with ?, !?, and ! at will)
 * Middle ground between classes and structs; user-defined objects are structs by default, and you can attach any function you like to them without having to define those functions as class methods specifically, and then define how they interact with that function
 
 ## Some Planned Features of SAFyR
@@ -42,7 +40,7 @@ Variables come in all the typical flavors:
 * List       (LST)
 * Map        (MAP)
 
-Initializing a variable works very similarly to other languages:
+Variables can also be instances of functions or custom structs.  Initializing a variable works very similarly to other languages:
     
     a = 5              ; a is an integer with value 5
     b = 10.            ; b is a float with value 10.0
@@ -110,6 +108,27 @@ SAFyR provides all the typical operators for a programming language (+, -, *, /,
 
     c = a ^ b          ; c = [[1 3] [1 4] [2 3] [2 4]]; exponentiation returns the cartesian product of two lists
 
+### Structs
+
+Structs in SAFyR are, in their simplest form, collections of variables just like you would find in traditional C.  The syntax for creating a struct is the following:
+
+    COLON TYPENAME \[ optional inputs \] {
+        prop1 = arg1
+        prop2 = arg2
+        ...
+    }
+
+    ;; here I define a new type called 'Fraction' that takes two parameters, a and b, and sets the
+       instance properties, num and den, to those respective values: ;;
+       
+    :Fraction [a b] {
+        num = a
+        den = b
+    }
+
+### Basic Control Flow
+
+### Functions
 
 ## Acknowledgements
 My biggest thank you needs to go to the great mind behind [CodePulse](https://www.youtube.com/@CodePulse).  Before taking on this project, I had never built a programming language at all.  I had written some scripts that could parse and emulate Assembly, but that is a far stretch from a full high level language.  I found his series on YouTube about building your own programming language, and I followed it step by step so I could learn how the whole process works, so basically the entire skeleton of the language is his code.  Once I got done with his tutorial and I saw how everything fits together, I wanted to completely build out the language with many new features.  I have already learned a great deal about language design, and have come across some surprising facts in doing so (e.g. static vs. dynamic typing can literally be implemented with one single line of code).  I have also gotten the chance to get creative with parts of the implementation -- for one, I completely rewrote the lexer to be a finite state machine programmable via text file, so you can change the definitions of tokens at will.  I appreciate anyone who takes the time to learn my language, and accepts it for the learning journey it is.  Again, all credit for the foundations of this language belongs exclusively to CodePulse.  Thank you so much to him for helping me learn how all of this works, and I hope I can do his code justice by building something awesome on top of it!
