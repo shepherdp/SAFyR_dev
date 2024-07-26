@@ -9,7 +9,7 @@ This repo houses the source code for SAFyR, my brand new programming language!  
 My main goal for SAFyR is to learn how to create a programming language.  That being said, I don't see why I can't explore the implementation of a wide range of features while I'm at it.  At its core, I would like SAFyR to be a fairly simple and lightweight language.  At the moment, I don't see implementing large projects in it.  It may evolve into something completely capable of that, though.  My second goal with this language is to be concise.  On the one hand, I want simple and easily readable syntax like is seen in Python (which incidentally is the language that SAFyR is being written in).
 
 ## List of Features to Implement Before Initial Release
-* New operators (ex. mylist </ 3 returns the first 3 elements of mylist, and mylist </ 3returns the last 3 elements)
+* New operators (ex. `mylist </ 3` returns the first 3 elements of mylist, and `mylist /> 3` returns the last 3 elements)
 * Multiple return values
 * Middle ground between classes and structs; user-defined objects are structs by default, and you can attach any function you like to them without having to define those functions as class methods specifically, and then define how they interact with that function
 
