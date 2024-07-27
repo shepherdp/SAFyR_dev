@@ -136,13 +136,76 @@ Structs in SAFyR are, in their simplest form, collections of variables just like
 
 #### Conditionals
 
+SAFyR supports traditional keywords for branching: `if`, `elif`, and `else`.  However, there is also a shorthand method of using these operators: `?`, `!?`, and `!`.  Any or all of these statements can occupy one or more lines, and an entire set of conditionals can be placed on the same line.  For instance:
+
+    ; Implementation 1
+    a = 5
+    if a < 5: a = "less" elif a > 7: a = "more" else a = "good"
+    print(a)
+
+    ; Implementation 2
+    a = 5
+    if a < 5 {
+        a = "less"
+    } elif a > 7 { a = "more" }
+    else { a = "good" }
+    print(a)
+
+    ; Implementation 3
+    a = 5
+    ? a < 5: a = "less" !? a > 7: a = "more" ! a = "good"
+    print(a)
+
+    ; All of the above implementations provide the following output:
+    >>> "good"
+
 #### While Loops
+
+Basic while syntax:
+
+    while CONDITION : STATEMENT
+
+or
+
+    while CONDITION {
+        STATEMENTS
+    }
 
 #### For Loops
 
+Basic for loop syntax:
+
+    for VARNAME = INT .. INT [.. INT] : STATEMENT
+
+or
+
+    for VARNAME = INT .. INT [.. INT] {
+        STATEMENTS
+    }
+
 #### When Triggers
 
+Basic when syntax:
+
+    when CONDITION : STATEMENT
+
+or
+
+    when CONDITION {
+        STATEMENTS
+    }
+
 #### Functions
+
+Basic function syntax:
+
+    . FUNCNAME [ ARGS ] <~ STATEMENT
+
+or
+
+    . FUNCNAME [ ARGS ] <~ {
+        STATEMENTS
+    }
 
 ## Acknowledgements
 My biggest thank you needs to go to the great mind behind [CodePulse](https://www.youtube.com/@CodePulse).  Before taking on this project, I had never built a programming language at all.  I had written some scripts that could parse and emulate Assembly, but that is a far stretch from a full high level language.  I found his series on YouTube about building your own programming language, and I followed it step by step so I could learn how the whole process works, so basically the entire skeleton of the language is his code.  Once I got done with his tutorial and I saw how everything fits together, I wanted to completely build out the language with many new features.  I have already learned a great deal about language design, and have come across some surprising facts in doing so (e.g. static vs. dynamic typing can literally be implemented with one single line of code).  I have also gotten the chance to get creative with parts of the implementation -- for one, I completely rewrote the lexer to be a finite state machine programmable via text file, so you can change the definitions of tokens at will.  I appreciate anyone who takes the time to learn my language, and accepts it for the learning journey it is.  Again, all credit for the foundations of this language belongs exclusively to CodePulse.  Thank you so much to him for helping me learn how all of this works, and I hope I can do his code justice by building something awesome on top of it!
