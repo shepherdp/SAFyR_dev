@@ -106,19 +106,27 @@ SAFyR provides all the typical operators for a programming language (+, -, *, /,
     a = [1 2 3 2 4]
     b = a / 2          ; b = [[1] [3] [4]]; division splits list based on operand value
 
+    a = [1 2 3 4 5]
+    b = a </ 2         ; b = [1 2]; splits off the specified amount of elements from the left of a list
+
+    a = [1 2 3 4 5]
+    b = a /> 2         ; b = [4 5]; splits off the specified amount of elements from the right of a list
+
+    a = [1 2]
+    b = [3 4]
     c = a ^ b          ; c = [[1 3] [1 4] [2 3] [2 4]]; exponentiation returns the cartesian product of two lists
 
 ### Structs
 
 Structs in SAFyR are, in their simplest form, collections of variables just like you would find in traditional C.  The syntax for creating a struct is the following:
 
-    COLON TYPENAME \[ optional inputs \] {
+    : optional TYPENAME \[ optional arguments \] {
         prop1 = arg1
         prop2 = arg2
         ...
     }
 
-    ;; here I define a new type called 'Fraction' that takes two parameters, a and b, and sets the
+    ;; here is defined a new type called 'Fraction' that takes two parameters, a and b, and sets the
        instance properties, num and den, to those respective values.  I then create a variable
        called 'myfrac' of that type, and initialize it with the values 7 and 4. ;;
        
