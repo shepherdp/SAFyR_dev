@@ -140,6 +140,43 @@ Structs in SAFyR are, in their simplest form, collections of variables just like
 
     >>> <struct Fraction> {'num': 7, 'den': 4}
 
+#### Struct Function Proxies
+
+SAFyR implements only a light natural melding of structs and functions.  For instance, structs cannot have dedicated methods.  Instead, SAFyR provides a way to control the inputs a struct gives to a function when it is passed as an argument.  For example, we might want to define a `printall` function that will iterate through a container object and print out each value on its own line.  That function would look like this:
+
+    : printall [ mylist ] <~ {
+        foreach i in mylist: print(i)
+    }
+
+This function takes a list or other iterable container as input, and prints each element on its own line.  We might also have a struct type `mytype` that has three attributes: `x`, `y`, `z`.  For this example, say we want `x` and `y` to be simple integers, but we want `z` to be a list.  That struct definition would look like this:
+
+    :: mytype [a b c] {
+        x = a
+        y = b
+        z = c
+    }
+
+Perhaps we want a quick shorthand to pass the `z` property of any `mytype` variable we have into the `printall` function instead of having to refer to `mytype.z` directly.  This can be implemented with function proxies in the following way:
+
+    : printall [ mylist ] <~ {
+        foreach i in mylist: print(i)
+    }
+
+    :: mytype [a b c] {
+        x = a
+        y = b
+        z = c
+
+        .printall <~ z            ; we add the proxy here, and tell the printall function that any time it sees a mytype
+    }                             ; object as input, take its z property as input instead
+
+    myvar = mytype( 1 2 [7 8 9] )
+    printall(myvar)
+
+    >>> 7
+    >>> 8
+    >>> 9
+
 ### Basic Control Flow
 
 #### Conditionals
