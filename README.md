@@ -135,85 +135,6 @@ SAFyR provides all the typical operators for a programming language (+, -, *, /,
     b = a @ 3          ; @ is the index operator, so b = "f"
     b = a @ (-2)       ; indexing also works with negative integers, so b = "a"
 
-### Structs
-
-Structs in SAFyR are, in their simplest form, collections of variables just like you would find in traditional C.  The syntax for creating a struct is the following:
-
-    : optional TYPENAME \[ optional arguments \] {
-        prop1 = arg1
-        prop2 = arg2
-        ...
-    }
-
-    ;; here is defined a new type called 'Fraction' that takes two parameters, a and b, and sets the
-       instance properties, num and den, to those respective values.  I then create a variable
-       called 'myfrac' of that type, and initialize it with the values 7 and 4. ;;
-       
-    :Fraction [a b] {
-        num = a
-        den = b
-    }
-
-    myfrac = Fraction(7 4)
-    print(myfrac)
-
-    >>> <struct Fraction> {'num': 7, 'den': 4}
-
-#### Struct Function Proxies
-
-SAFyR implements only a light natural melding of structs and functions.  For instance, structs cannot have dedicated methods.  Instead, SAFyR provides a way to control the inputs a struct gives to a function when it is passed as an argument.  For example, we might want to define a `printall` function that will iterate through a container object and print out each value on its own line.  That function would look like this:
-
-    : printall [ mylist ] <~ {
-        foreach i in mylist: print(i)
-    }
-
-This function takes a list or other iterable container as input, and prints each element on its own line.  We might also have a struct type `mytype` that has three attributes: `x`, `y`, `z`.  For this example, say we want `x` and `y` to be simple integers, but we want `z` to be a list.  That struct definition would look like this:
-
-    :: mytype [a b c] {
-        x = a
-        y = b
-        z = c
-    }
-
-Perhaps we want a quick shorthand to pass the `z` property of any `mytype` variable we have into the `printall` function instead of having to refer to `mytype.z` directly.  This can be implemented with function proxies in the following way:
-
-    : printall [ mylist ] <~ {
-        foreach i in mylist: print(i)
-    }
-
-    :: mytype [a b c] {
-        x = a
-        y = b
-        z = c
-
-        .printall <~ z            ;; we add the proxy here, and tell the printall function that any time it sees a mytype
-    }                                object as input, take its z property as input instead ;;
-
-    myvar = mytype( 1 2 [7 8 9] )
-    printall(myvar)
-
-    >>> 7
-    >>> 8
-    >>> 9
-
-This behavior can also be used to override the functionality of built in operators (+, *, etc.).  For example, say that when we want to "add" an instance of `mytype` to something else, we really just want to add its `x` value.
-
-    :: mytype [a b c] {
-        x = a
-        y = b
-        z = c
-
-        .+ <~ z            ; we add the proxy here, and tell the + operator that any time it sees a mytype
-    }                         object an operand, take its x property as input instead ;;
-
-    a = mytype(1 2 3)
-    print(a + 6)           ; a's x property is equal to 1, so that is what 6 gets added to
-    >>> 7
-
-    c = mtype(4 5 6)
-    print(a + c)           ; a's x property is equal to 1, and c's is equal to 4, resulting in 5
-    >>> 5
-
 ### Basic Control Flow
 
 #### Conditionals
@@ -298,7 +219,7 @@ or
         STATEMENTS
     }
 
-#### Functions
+### Functions
 
 Basic function syntax:
 
@@ -309,6 +230,85 @@ or
     . FUNCNAME [ ARGS ] <~ {
         STATEMENTS
     }
+
+### Structs
+
+Structs in SAFyR are, in their simplest form, collections of variables just like you would find in traditional C.  The syntax for creating a struct is the following:
+
+    : optional TYPENAME \[ optional arguments \] {
+        prop1 = arg1
+        prop2 = arg2
+        ...
+    }
+
+    ;; here is defined a new type called 'Fraction' that takes two parameters, a and b, and sets the
+       instance properties, num and den, to those respective values.  I then create a variable
+       called 'myfrac' of that type, and initialize it with the values 7 and 4. ;;
+       
+    :Fraction [a b] {
+        num = a
+        den = b
+    }
+
+    myfrac = Fraction(7 4)
+    print(myfrac)
+
+    >>> <struct Fraction> {'num': 7, 'den': 4}
+
+#### Struct Function Proxies
+
+SAFyR implements only a light natural melding of structs and functions.  For instance, structs cannot have dedicated methods.  Instead, SAFyR provides a way to control the inputs a struct gives to a function when it is passed as an argument.  For example, we might want to define a `printall` function that will iterate through a container object and print out each value on its own line.  That function would look like this:
+
+    : printall [ mylist ] <~ {
+        foreach i in mylist: print(i)
+    }
+
+This function takes a list or other iterable container as input, and prints each element on its own line.  We might also have a struct type `mytype` that has three attributes: `x`, `y`, `z`.  For this example, say we want `x` and `y` to be simple integers, but we want `z` to be a list.  That struct definition would look like this:
+
+    :: mytype [a b c] {
+        x = a
+        y = b
+        z = c
+    }
+
+Perhaps we want a quick shorthand to pass the `z` property of any `mytype` variable we have into the `printall` function instead of having to refer to `mytype.z` directly.  This can be implemented with function proxies in the following way:
+
+    : printall [ mylist ] <~ {
+        foreach i in mylist: print(i)
+    }
+
+    :: mytype [a b c] {
+        x = a
+        y = b
+        z = c
+
+        .printall <~ z            ;; we add the proxy here, and tell the printall function that any time it sees a mytype
+    }                                object as input, take its z property as input instead ;;
+
+    myvar = mytype( 1 2 [7 8 9] )
+    printall(myvar)
+
+    >>> 7
+    >>> 8
+    >>> 9
+
+This behavior can also be used to override the functionality of built in operators (+, *, etc.).  For example, say that when we want to "add" an instance of `mytype` to something else, we really just want to add its `x` value.
+
+    :: mytype [a b c] {
+        x = a
+        y = b
+        z = c
+
+        .+ <~ z            ; we add the proxy here, and tell the + operator that any time it sees a mytype
+    }                         object an operand, take its x property as input instead ;;
+
+    a = mytype(1 2 3)
+    print(a + 6)           ; a's x property is equal to 1, so that is what 6 gets added to
+    >>> 7
+
+    c = mtype(4 5 6)
+    print(a + c)           ; a's x property is equal to 1, and c's is equal to 4, resulting in 5
+    >>> 5
 
 ## Acknowledgements
 My biggest thank you needs to go to the great mind behind [CodePulse](https://www.youtube.com/@CodePulse).  Before taking on this project, I had never built a programming language at all.  I had written some scripts that could parse and emulate Assembly, but that is a far stretch from a full high level language.  I found his series on YouTube about building your own programming language, and I followed it step by step so I could learn how the whole process works, so basically the entire skeleton of the language is his code.  Once I got done with his tutorial and I saw how everything fits together, I wanted to completely build out the language with many new features.  I have already learned a great deal about language design, and have come across some surprising facts in doing so (e.g. static vs. dynamic typing can literally be implemented with one single line of code).  I have also gotten the chance to get creative with parts of the implementation -- for one, I completely rewrote the lexer to be a finite state machine programmable via text file, so you can change the definitions of tokens at will.  I appreciate anyone who takes the time to learn my language, and accepts it for the learning journey it is.  Again, all credit for the foundations of this language belongs exclusively to CodePulse.  Thank you so much to him for helping me learn how all of this works, and I hope I can do his code justice by building something awesome on top of it!
