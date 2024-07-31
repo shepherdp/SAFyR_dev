@@ -104,7 +104,7 @@ SAFyR provides all the typical operators for a programming language (+, -, *, /,
     c = a * b          ; c = [[1 3] [2 4]]; multiplication zips two lists (must be the same size)
 
     a = [1 2 3 2 4]
-    b = a / 2          ; b = [[1] [3] [4]]; division splits list based on operand value
+    b = a / 2          ; b = [[1 2] [3 2] [4]]; division splits list based on operand value
 
     a = [1 2 3 4 5]
     b = a </ 2         ; b = [1 2]; splits off the specified amount of elements from the left of a list
@@ -167,8 +167,8 @@ Perhaps we want a quick shorthand to pass the `z` property of any `mytype` varia
         y = b
         z = c
 
-        .printall <~ z            ; we add the proxy here, and tell the printall function that any time it sees a mytype
-    }                             ; object as input, take its z property as input instead
+        .printall <~ z            ;; we add the proxy here, and tell the printall function that any time it sees a mytype
+    }                                object as input, take its z property as input instead ;;
 
     myvar = mytype( 1 2 [7 8 9] )
     printall(myvar)
@@ -176,6 +176,24 @@ Perhaps we want a quick shorthand to pass the `z` property of any `mytype` varia
     >>> 7
     >>> 8
     >>> 9
+
+This behavior can also be used to override the functionality of built in operators (+, *, etc.).  For example, say that when we want to "add" an instance of `mytype` to something else, we really just want to add its `x` value.
+
+    :: mytype [a b c] {
+        x = a
+        y = b
+        z = c
+
+        .+ <~ z            ; we add the proxy here, and tell the + operator that any time it sees a mytype
+    }                         object an operand, take its x property as input instead ;;
+
+    a = mytype(1 2 3)
+    print(a + 6)           ; a's x property is equal to 1, so that is what 6 gets added to
+    >>> 7
+
+    c = mtype(4 5 6)
+    print(a + c)           ; a's x property is equal to 1, and c's is equal to 4, resulting in 5
+    >>> 5
 
 ### Basic Control Flow
 
