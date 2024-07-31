@@ -116,6 +116,25 @@ SAFyR provides all the typical operators for a programming language (+, -, *, /,
     b = [3 4]
     c = a ^ b          ; c = [[1 3] [1 4] [2 3] [2 4]]; exponentiation returns the cartesian product of two lists
 
+    a = [1 2 3]
+    b = a @ 1          ; @ is the index operator, so b = 2
+
+    a = "abc"          ; a is string
+    a = a + "de"       ; addition concatenates strings, so a = "abcde"
+
+    a = "abaca"
+    a = a - "a"        ; subtraction removes substrings, so a = "bc"
+
+    a = "ab"
+    a = a * 3          ; multiplication multiplies strings, so a = "ababab"
+
+    a = "bbabcabd"
+    a = a / "a"        ; division splits on substrings, so a = ["bb" "bc" "bd"]
+
+    a = "bbaf"
+    b = a @ 3          ; @ is the index operator, so b = "f"
+    b = a @ (-2)       ; indexing also works with negative integers, so b = "a"
+
 ### Structs
 
 Structs in SAFyR are, in their simplest form, collections of variables just like you would find in traditional C.  The syntax for creating a struct is the following:
@@ -209,9 +228,11 @@ SAFyR supports traditional keywords for branching: `if`, `elif`, and `else`.  Ho
     ; Implementation 2
     a = 5
     if a < 5 {
-        a = "less"
-    } elif a > 7 { a = "more" }
-    else { a = "good" }
+        a = "less" }
+    elif a > 7 {
+        a = "more" }
+    else {
+        a = "good" }
     print(a)
 
     ; Implementation 3
@@ -233,6 +254,25 @@ or
     while CONDITION {
         STATEMENTS
     }
+
+While loops behave in the typical fashion: the statements inside the body of the loop execute repeatedly until the condition becomes true.  For example:
+
+    a = 5
+    while a < 10: a += 1
+    print(a)
+    >>> 10
+
+    a = 5
+    while a < 10 {
+        a += 1
+        print(a)
+    }
+    
+    >>> 6
+    >>> 7
+    >>> 8
+    >>> 9
+    >>> 10
 
 #### For Loops
 
