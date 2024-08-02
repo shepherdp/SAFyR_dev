@@ -409,9 +409,9 @@ class Parser:
 
         # register map
         elif tok.type == 'LCR':
-            list_expr = res.register(self.map_expr())
+            map_expr = res.register(self.map_expr())
             if res.error: return res
-            return res.success(list_expr)
+            return res.success(map_expr)
 
         # register conditional chain
         elif tok.matches(Token('KWD', '?')) or tok.matches(Token('KWD', 'if')):
