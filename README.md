@@ -159,6 +159,8 @@ SAFyR supports traditional keywords for branching: `if`, `elif`, and `else`.  Ho
     ; All of the above implementations provide the following output:
     >>> "good"
 
+*NOTE: multi-statement bodies are placed inside curly braces.  The opening brace must be on the same line as the corresponding keyword and condition and then followed by a newline.*
+
 #### While Loops
 
 Basic while syntax:
@@ -201,6 +203,41 @@ or
     for VARNAME = INT .. INT [.. INT] {
         STATEMENTS
     }
+
+Each `for` keywword is followed by a variable name to use as the index of iteration, and then an integer starting index, a double-dot operator, an integer (exclusive) ending index, and then an optional double-dot operator followed by an integer step value.
+
+The body of the for loop follows a colon if it is a single statement, and inside curly braces if more.
+
+    for i == 0 .. 3: print(i)
+    
+    >>> 0
+    >>> 1
+    >>> 2
+
+    for i = 10 .. 15 .. 2 {
+        a += 1
+        print(a)
+    }
+    
+    >>> 10
+    >>> 12
+    >>> 14
+
+#### Foreach Loops
+
+Basic foreach loop syntax:
+
+    foreach VARNAME in CONTAINER : STATEMENT
+
+or
+
+    foreach VARNAME in CONTAINER {
+        STATEMENTS
+    }
+
+Each `foreach` keywword is followed by a variable name to use as the index of iteration, and then an integer starting index, a double-dot operator, an integer (exclusive) ending index, and then an optional double-dot operator followed by an integer step value.
+
+The body of the for loop follows a colon if it is a single statement, and inside curly braces if more.
 
 #### When Triggers
 
