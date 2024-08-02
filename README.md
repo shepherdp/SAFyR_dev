@@ -12,6 +12,8 @@ My main goal for SAFyR is to learn how to create a programming language.  That b
 * Able to be interpreted or compiled (right now I plan to compile to LLVM bytecode)
 * Errors as values (possibly)
 * Native streamlined control flows for error handling
+* Multiple return values
+* Calling functions as methods
 
 ## Coding in SAFyR
 Here is some basic functionality for SAFyR.  This part of the document will be continually updated as new features are implemented and tested.
@@ -275,6 +277,8 @@ Example:
 
 #### When Triggers
 
+When triggers are used like event-based callbacks.  Many times in programming, if you need something to happen until a certain condition is met, you use a while loop that ends upon the satisfaction of that condition.  Other times, there is only a single task you want to execute at the moment some condition becomes true, and possibly never again.  This is the purpose of the when trigger.
+
 Basic when syntax:
 
     when CONDITION : STATEMENT
@@ -285,17 +289,98 @@ or
         STATEMENTS
     }
 
+Example:
+
+    a = b = 0
+    when a == 10: b = 50
+
+    while b < 50: a += 1
+
+    print(a)
+    print(b)
+
+    >>> 10
+    >>> 50
+
+In the example above, both `a` and `b` are initialized to zero, and then a loop is started that will continually add one to `a` until `b` becomes at least 50.  The loop would run for 10 iterations, adding one to `a` each time, until the `when` condition is met.  As soon as it is, its body of statements is called, in this case simply setting `b` to 50.  As soon as `a` takes on the value 10, `b` takes on the value 50, and the loop is terminated.
+
+By default, any `when` trigger will persist, and will fire every time the condition becomes true.  Adding the `once` keyword inside the body of your trigger deletes it after it executes the first time.
+
+    ; when trigger without the once keyword
+    
+    a = b = 0
+    when a == 10: b = 50
+    while b < 50: a += 1
+    print(a)
+    print(b)
+
+    >>> 10
+    >>> 50
+
+    a = b = 0                ; reset a and b
+    while b < 50: a += 1     ; run the while loop again
+    print(a)
+    print(b)
+
+    >>> 10                   ; same result as before
+    >>> 50
+
+    ; when trigger with the once keyword
+
+    a = b = 0
+    when a == 10 {
+        b = 50
+        once
+    }
+    while b < 50: a += 1
+    print(a)
+    print(b)
+
+    >>> 10
+    >>> 50
+
+    a = b = 0                ; reset a and b
+    while b < 50: a += 1     ; this loop will run forever because 'b = 50' does not happen again
+
 ### Functions
 
 Basic function syntax:
 
-    . FUNCNAME [ ARGS ] <~ STATEMENT
+    . optional FUNCNAME [ optional ARGS ] <~ STATEMENT
 
 or
 
-    . FUNCNAME [ ARGS ] <~ {
+    . optional FUNCNAME [ optional ARGS ] <~ {
         STATEMENTS
     }
+
+Functions can be defined with names, or as anonymous functions that can be stored as elements in a container or properties in a struct.  All functions can take zero or more arguments.  Single-line function definitions automatically return the statement on the right side of the `<~` operator, so no `return` keyword is necessary.  Multiline functions MUST have a return keyword in order to return a value.
+
+    : addTwoNumbers [a b] <~ a + b
+
+    myvar = addTwoNumbers(1 2)
+    print(myvar)
+
+    >>> 3
+
+    : addTwoNumbers [a b] <~ {
+        a = a + b
+    }
+
+    myvar = addTwoNumbers(1 2)
+    print(myvar)
+
+    >>> 0                            ; default null value is 0
+
+    : addTwoNumbers [a b] <~ {
+        a = a + b
+        return a
+    }
+
+    myvar = addTwoNumbers(1 2)
+    print(myvar)
+
+    >>> 3
 
 ### Structs
 
@@ -358,7 +443,7 @@ Perhaps we want a quick shorthand to pass the `z` property of any `mytype` varia
     >>> 8
     >>> 9
 
-This behavior can also be used to override the functionality of built in operators (+, *, etc.).  For example, say that when we want to "add" an instance of `mytype` to something else, we really just want to add its `x` value.
+This behavior can also be used to override the functionality of built in operators (+, *, etc.).  For example, say that when we want to "add" an instance of `mytype` to something else, we really just want to add its `x` value.  The only operator that cannot be overridden in this way is '='.
 
     :: mytype [a b c] {
         x = a
@@ -381,9 +466,8 @@ This behavior can also be used to override the functionality of built in operato
 * capitalized string: production
 * lowercase string: keyword, operator, or object
 * "*": zero or more
-* "+": one or more
 * "?": optional
-* "or": multiple possible syntaxes
+* "|": multiple possible syntaxes
 
 .SAFyR OFFICIAL GRAMMAR
 
@@ -404,7 +488,7 @@ This behavior can also be used to override the functionality of built in operato
                 : const? TYPE? COMP ((LOGICAL) COMP)* (ASG EXPR)?
 
     COMP        : not COMP
-                : ARITH ((eq | ne | lt | le | gt | ge) ARITH)*
+                : ARITH (COMPARE ARITH)*
 
     ARITH       : TERM ((pls | mns) TERM)*
 
@@ -466,16 +550,22 @@ This behavior can also be used to override the functionality of built in operato
                     cln statement
                     | lcr NEWLINE STATEMENTS rcr
 
-FUNCDEF     : KEYWORD:FUN IDENTIFIER?
-              LPAREN (IDENTIFIER (COMMA IDENTIFIER)*)? RPAREN
-              (ARROW expr)
-            | (NEWLINE statements KEYWORD:END)
+    FUNCDEF     : cln IDENTIFIER? lbr (IDENTIFIER*)? inj lcr NEWLINE STATEMENTS rcr
 
-STRUCTDEF   : KEYWORD:FUN IDENTIFIER?
-              LPAREN (IDENTIFIER (COMMA IDENTIFIER)*)? RPAREN
-              (ARROW expr)
-            | (NEWLINE statements KEYWORD:END)
+    STRUCTDEF   : dcln IDENTIFIER lbr (IDENTIFIER*)? rbr lcr NEWLINE STATEMENTS rcr
 
+    PROXY       : dot IDENTIFIER inj EXPR
+
+    TRYEXPR     : try
+                    cln STATEMENT NEWLINE CATCHEXPR
+                    | lcr NEWLINE STATEMENTS rcr CATCHEXPR
+
+    CATCHEXPR   : catch
+                    cln STATEMENT
+                    | lcr NEWLINE STATEMENTS rcr
+    
+
+    Tokens / Keywords
                 : Name   : Token
     ASG         : asg    : =       ; basic assignment
                 : xpls   : +=      ; augmented addition
@@ -521,8 +611,9 @@ STRUCTDEF   : KEYWORD:FUN IDENTIFIER?
 
     OTHERS      : dot    : .        ; properties are accessed with dot
                 : ddot   : ..       ; double dot operators are used in for loop declarations
-                : struct : ::       ; struct definitions begin with double colon
+                : dcln   : ::       ; struct definitions begin with double colon
                 : cln    : :
+                : inj    : <~
                 : lpar   : (
                 : rpar   : )
                 : lbr    : \[
