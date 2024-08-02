@@ -6,6 +6,7 @@ from random import random
 
 
 class Position:
+    
     def __init__(self, idx, ln, col, fn, ftxt):
         self.idx = idx
         self.ln = ln
@@ -26,6 +27,7 @@ class Position:
 
 
 class Token:
+    
     def __init__(self, type_, value=None, pos_start=None, pos_end=None):
         self.type = type_
         self.value = value
@@ -49,6 +51,7 @@ class Token:
         return self.value == other.value and self.type == other.type
 
 class SymbolTable:
+    
     def __init__(self, parent=None):
         self.symbols = {}
         self.parent = parent
@@ -70,6 +73,7 @@ class SymbolTable:
 
 
 class Context:
+    
     def __init__(self, display_name, parent=None, parent_entry_pos=None):
         self.display_name = display_name
         self.parent = parent
@@ -78,6 +82,7 @@ class Context:
 
 
 class Value:
+    
     def __init__(self, t=None, static=False, const=False):
         self.set_pos()
         self.set_context()
@@ -96,73 +101,51 @@ class Value:
         self.context = context
         return self
 
-    def add(self, other):
-        return None, self.illegal_op(other)
+    def add(self, other): return None, self.illegal_op(other)
 
-    def sub(self, other):
-        return None, self.illegal_op(other)
+    def sub(self, other): return None, self.illegal_op(other)
 
-    def mul(self, other):
-        return None, self.illegal_op(other)
+    def mul(self, other): return None, self.illegal_op(other)
 
-    def div(self, other):
-        return None, self.illegal_op(other)
+    def div(self, other): return None, self.illegal_op(other)
 
-    def mod(self, other):
-        return None, self.illegal_op(other)
+    def mod(self, other): return None, self.illegal_op(other)
 
-    def pow(self, other):
-        return None, self.illegal_op(other)
+    def pow(self, other): return None, self.illegal_op(other)
 
-    def eq(self, other):
-        return None, self.illegal_op(other)
+    def eq(self, other): return None, self.illegal_op(other)
 
-    def ne(self, other):
-        return None, self.illegal_op(other)
+    def ne(self, other): return None, self.illegal_op(other)
 
-    def lt(self, other):
-        return None, self.illegal_op(other)
+    def lt(self, other): return None, self.illegal_op(other)
 
-    def gt(self, other):
-        return None, self.illegal_op(other)
+    def gt(self, other): return None, self.illegal_op(other)
 
-    def le(self, other):
-        return None, self.illegal_op(other)
+    def le(self, other): return None, self.illegal_op(other)
 
-    def ge(self, other):
-        return None, self.illegal_op(other)
+    def ge(self, other): return None, self.illegal_op(other)
 
-    def logand(self, other):
-        return None, self.illegal_op(other)
+    def logand(self, other): return None, self.illegal_op(other)
 
-    def logor(self, other):
-        return None, self.illegal_op(other)
+    def logor(self, other): return None, self.illegal_op(other)
 
-    def lognand(self, other):
-        return None, self.illegal_op(other)
+    def lognand(self, other): return None, self.illegal_op(other)
 
-    def lognor(self, other):
-        return None, self.illegal_op(other)
+    def lognor(self, other): return None, self.illegal_op(other)
 
-    def logxor(self, other):
-        return None, self.illegal_op(other)
+    def logxor(self, other): return None, self.illegal_op(other)
 
-    def lognot(self):
-        return None, self.illegal_op(self)
+    def lognot(self): return None, self.illegal_op(self)
 
-    def at(self, other):
-        return None, self.illegal_op(other)
+    def at(self, other): return None, self.illegal_op(other)
 
-    def contains(self, other):
-        return None, self.illegal_op(other)
+    def contains(self, other): return None, self.illegal_op(other)
 
-    def inj(self, other):
-        return None, self.illegal_op(other)
-    def sliceleft(self, other):
-        return None, self.illegal_op(other)
+    def inj(self, other): return None, self.illegal_op(other)
+        
+    def sliceleft(self, other): return None, self.illegal_op(other)
 
-    def sliceright(self, other):
-        return None, self.illegal_op(other)
+    def sliceright(self, other): return None, self.illegal_op(other)
 
     def copy(self):
         copy = Value(self.value)
@@ -170,8 +153,7 @@ class Value:
         copy.set_context(self.context)
         return copy
 
-    def is_true(self):
-        return self.value != 0
+    def is_true(self): return self.value != 0
 
     def illegal_op(self, other=None):
         if other: return NotImplementedError(self.pos_start,
@@ -182,7 +164,9 @@ class Value:
     def __repr__(self):
         return str(self.value)
 
+
 class Number(Value):
+    
     def __init__(self, value, t=None):
         super().__init__(t=t if t else 'INT')
         self.value = value
@@ -327,6 +311,7 @@ Number.true = Number(1)
 
 
 class String(Value):
+    
     def __init__(self, value):
         super().__init__(t='STR')
         self.value = value
@@ -469,6 +454,7 @@ class String(Value):
 
 
 class List(Value):
+    
     def __init__(self, elements):
         super().__init__(t='LST')
         self.elements = elements
@@ -608,6 +594,7 @@ class List(Value):
         return True
 
 class Map(Value):
+    
     def __init__(self, elements):
         super().__init__(t='MAP')
         self.elements = elements
@@ -680,6 +667,7 @@ class Map(Value):
 from copy import deepcopy
 
 class Struct(Value):
+    
     def __init__(self, properties, context, instance_name):
         super().__init__(t='STRC')
         self.instance_name = instance_name
@@ -722,6 +710,7 @@ class Struct(Value):
 
 
 class BaseFunction(Value):
+    
     def __init__(self, name):
         super().__init__(t='FNC')
         self.name = name or "<anonymous>"
@@ -739,13 +728,11 @@ class BaseFunction(Value):
                                                        self.pos_end,
                                                        f"{len(args) - len(arg_names)} too many args passed into {self}",
                                                        self.context))
-
         if len(args) < len(arg_names):
             return res.failure(InvalidArgumentSetError(self.pos_start,
                                                        self.pos_end,
                                                        f"{len(arg_names) - len(args)} too few args passed into {self}",
                                                        self.context))
-
         return res.success(None)
 
     def populate_args(self, arg_names, args, exec_ctx):
@@ -766,6 +753,7 @@ class BaseFunction(Value):
 
 
 class Function(BaseFunction):
+    
     def __init__(self, name, body_node, arg_names, auto_return):
         super().__init__(name)
         self.body_node = body_node
@@ -845,6 +833,7 @@ class StructGenerator(BaseFunction):
 
 
 class BuiltInFunction(BaseFunction):
+    
     def __init__(self, name):
         super().__init__(name)
 
@@ -955,7 +944,7 @@ class BuiltInFunction(BaseFunction):
                                                         self.pos_end,
                                                         "Second argument must be number",
                                                         exec_ctx))
-
+            
         try: element = list_.elements.pop(index.value)
         except: return RuntimeResult().failure(OutOfBoundsError(self.pos_start,
                                                                 self.pos_end,
@@ -1190,6 +1179,7 @@ BuiltInFunction.rand = BuiltInFunction("rand")
 
 
 class File(Value):
+    
     def __init__(self, fname, mode):
         super().__init__(t='FILE')
         self.fname = fname
