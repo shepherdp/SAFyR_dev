@@ -465,8 +465,15 @@ class Interpreter:
         container = res.register(self.visit(node.container_node, context))
         if res.should_return(): return res
 
-        for elem in container.elements:
+        if isinstance(container, List) or isinstance(container, Map):
+            capsule = container.elements
+        elif isinstance(container, String):
+            capsule = container.value
+        else: return res.failure(InvalidSyntaxError(node.pos_start,
+                                                    node.pos_end,
+                                                    f'Expected container, got {type(container)}'))
 
+        for elem in capsule:
             context.symbol_table.set(node.var_name_tok.value, elem)
             result = res.register(self.visit(node.body_node, context))
             if (res.should_return() and
