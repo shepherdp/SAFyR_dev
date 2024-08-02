@@ -114,6 +114,12 @@ SAFyR provides all the typical operators for a programming language (+, -, *, /,
     a = [1 2 3]
     b = a @ 1          ; @ is the index operator, so b = 2
 
+    a = {1: "a"        ; a is a dictionary with keys 1 and "b", and values "a" and 2
+         "b": 2}
+    b = a + {"3": "c"} ; b = {1: "a"
+                              "b": 2
+                              "3": "c"} because addition adds a new key-value pair to a map
+
     a = "abc"          ; a is string
     a = a + "de"       ; addition concatenates strings, so a = "abcde"
 
