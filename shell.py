@@ -46,13 +46,8 @@ class Shell:
 
         while True:
 
-            # cmd = input('>> ')
-            cmd = 'run source'
-            if cmd == '':
-                cmd = 'run lt'
-            if cmd == 'q':
-                break
-
+            cmd = input('>> ')
+            if cmd == 'q': break
             if cmd == 'help':
                 print('Try typing one of the following commands to run the source files included:')
                 print()
@@ -68,8 +63,7 @@ class Shell:
                         data = f.read()
                         needsrun = True
                         fromfile = True
-                else:
-                    print(f'File not found: {cmd}')
+                else: print(f'File not found: {cmd}')
             else:
                 data = cmd
                 needsrun = True
@@ -94,11 +88,10 @@ class Shell:
                     print(result.error)
                     continue
 
+                # this helps the test suite see the answer, but is otherwise useless
                 result.value
                 if not fromfile:
                     print(result.value)
-
-                break
 
 
 if __name__ == '__main__':
