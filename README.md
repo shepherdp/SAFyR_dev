@@ -314,21 +314,23 @@ This behavior can also be used to override the functionality of built in operato
 * "?": optional
 * "or": multiple possible syntaxes
 
-STATEMENTS  : newline* STATEMENT (newline STATEMENT)* newline*
+.SAFyR OFFICIAL GRAMMAR
 
-STATEMENT   : use IDENTIFIER
-			: continue
-			: break
-            : return EXPR?
-            : del IDENTIFIER
-            : once            
-			: EXPR
+    STATEMENTS  : newline* STATEMENT (newline STATEMENT)* newline*
 
-EXPR        : FUNCDEF
-            : STRUCTDEF
-            : PROXY
-            : const? TYPE? IDENTIFIER ASG EXPR
-            : const? TYPE? COMP ((LOGICAL) COMP)* (ASG EXPR)?
+    STATEMENT   : use IDENTIFIER
+                : continue
+                : break
+                : return EXPR?
+                : del IDENTIFIER
+                : once            
+                : EXPR
+
+    EXPR        : FUNCDEF
+                : STRUCTDEF
+                : PROXY
+                : const? TYPE? IDENTIFIER ASG EXPR
+                : const? TYPE? COMP ((LOGICAL) COMP)* (ASG EXPR)?
 
 COMP        : not COMP
             : ARITH ((eq | ne | lt | le | gt | ge) ARITH)*
