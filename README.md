@@ -229,7 +229,11 @@ The body of the for loop follows a colon if it is a single statement, and inside
     >>> 12
     >>> 14
 
+*NOTE: determination of numerical types (e.g. integer and float) are performed IN THE LEXER.  If you write your for loop declaration as 'for i = 0..2', then SAFyR will interpret that line of code as 'for i = 0.0 2.0' and will throw an error. Dots MUST be separated from numerical characters by whitespace.*
+
 #### Foreach Loops
+
+Foreach is the iterator loop in SAFyR.  Syntactically, this is implemented the same as in Python.  Currently there is only support for iterating over containers (lists, maps, strings), but support for iterating structs will be implemented in the near future.  Each `foreach` keywword is followed by a variable name to use as the object of iteration, then the keyword `in`, and finally a container for that variable to take on values from.  The body of the foreach loop follows a colon if it is a single statement, and inside curly braces if more.
 
 Basic foreach loop syntax:
 
@@ -241,9 +245,33 @@ or
         STATEMENTS
     }
 
-Each `foreach` keywword is followed by a variable name to use as the index of iteration, and then an integer starting index, a double-dot operator, an integer (exclusive) ending index, and then an optional double-dot operator followed by an integer step value.
+Example:
 
-The body of the for loop follows a colon if it is a single statement, and inside curly braces if more.
+    a = [1 2 3]
+    foreach num in a: print(num)
+
+    >>> 1
+    >>> 2
+    >>> 3
+
+    a = {"a": 123
+         "b": 456
+         "c": 789}
+    foreach key in a {
+        print(key)
+    }
+
+    >>> "a"
+    >>> "b"
+    >>> "c"
+
+    foreach key in a {
+        print(a @ key)
+    }
+
+    >>> 123
+    >>> 456
+    >>> 789
 
 #### When Triggers
 
@@ -419,21 +447,24 @@ This behavior can also be used to override the functionality of built in operato
                     | (if | ?) EXPR lcr NEWLINE STATEMENTS rcr IFEXPRB* (IFEXPRC)?
 
     IFEXPRC     : (else | !)
-                  cln STATEMENT
-                | NEWLINE STATEMENTS rcr
+                    cln STATEMENT
+                    | NEWLINE STATEMENTS rcr
 
-FOREXPR     : KEYWORD:FOR IDENTIFIER EQ expr KEYWORD:TO expr 
-              (KEYWORD:STEP expr)? KEYWORD:THEN
-              statement
-            | (NEWLINE statements KEYWORD:END)
+    FOREXPR     : for IDENTIFIER eq EXPR ddot EXPR (ddot EXPR)? 
+                    cln STATEMENT
+                    | lcr NEWLINE STATEMENTS rcr
 
-WHILEEXPR   : KEYWORD:WHILE expr KEYWORD:THEN
-              statement
-            | (NEWLINE statements KEYWORD:END)
+    FOREACHEXPR : for IDENTIFIER in EXPR
+                    cln STATEMENT
+                    | lcr NEWLINE STATEMENTS rcr
 
-WHENEXPR   : KEYWORD:WHILE expr KEYWORD:THEN
-              statement
-            | (NEWLINE statements KEYWORD:END)
+    WHILEEXPR   : while EXPR
+                  cln statement
+                  | lcr NEWLINE STATEMENTS rcr
+
+    WHILEEXPR   : when EXPR
+                    cln statement
+                    | lcr NEWLINE STATEMENTS rcr
 
 FUNCDEF     : KEYWORD:FUN IDENTIFIER?
               LPAREN (IDENTIFIER (COMMA IDENTIFIER)*)? RPAREN
@@ -489,6 +520,7 @@ STRUCTDEF   : KEYWORD:FUN IDENTIFIER?
                 : map
 
     OTHERS      : dot    : .        ; properties are accessed with dot
+                : ddot   : ..       ; double dot operators are used in for loop declarations
                 : struct : ::       ; struct definitions begin with double colon
                 : cln    : :
                 : lpar   : (
