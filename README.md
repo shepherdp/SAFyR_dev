@@ -305,5 +305,154 @@ This behavior can also be used to override the functionality of built in operato
     print(a + c)           ; a's x property is equal to 1, and c's is equal to 4, resulting in 5
     >>> 5
 
+## Grammar
+
+* capitalized string: production
+* lowercase string: keyword, operator, or object
+* "*": zero or more
+* "+": one or more
+* "?": optional
+* "or": multiple possible syntaxes
+
+STATEMENTS  : newline* STATEMENT (newline STATEMENT)* newline*
+
+STATEMENT   : use IDENTIFIER
+			: continue
+			: break
+            : return EXPR?
+            : del IDENTIFIER
+            : once            
+			: EXPR
+
+EXPR        : FUNCDEF
+            : STRUCTDEF
+            : PROXY
+            : const? TYPE? IDENTIFIER ASG EXPR
+            : const? TYPE? COMP ((LOGICAL) COMP)* (ASG EXPR)?
+
+COMP        : not COMP
+            : ARITH ((eq | ne | lt | le | gt | ge) ARITH)*
+
+ARITH       : TERM ((pls | mns) TERM)*
+
+TERM        : FACTOR ((mul | div | mod) FACTOR)*
+
+FACTOR      : (pls | mns) FACTOR
+            : power
+
+POWER       : INDEX (pow FACTOR)*
+
+INDEX       : PROPERTY ((IDXOP) PROPERTY)*
+
+PROPERTY    : CALL (dot ATOM)*
+
+CALLL        : ATOM (lpar (EXPR (EXPR)*)? rpar)?
+
+ATOM        : lit | IDENTIFIER
+            : lpar EXPR rpar
+            : LIST
+            : MAP
+            : IFEXPR
+            : FOREXPR
+            : FOREACHEXPR
+            : WHILEEXPR
+            : WHENEXPR
+            : TRYEXPR
+            : FUNC
+            : STRUCT
+
+LIST        : lbr ((EXPR)*)? rbr
+
+MAP         : lcr ((EXPR cln EXPR)*)? rcr
+
+IFEXPR      : (if | ?) EXPR
+                cln STATEMENT (IFEXPRB | IFEXPRC)?
+                | (if | ?) EXPR lcr NEWLINE STATEMENTS rcr (IFEXPRB | IFEXPRC)?
+
+IFEXPRB     : (elif | !?) EXPR
+                cln STATEMENT (IFEXPRB | IFEXPRC)?
+                | (if | ?) EXPR lcr NEWLINE STATEMENTS rcr IFEXPRB* (IFEXPRC)?
+
+IFEXPRC     : (else | !)
+              cln STATEMENT
+            | NEWLINE STATEMENTS rcr
+
+FOREXPR     : KEYWORD:FOR IDENTIFIER EQ expr KEYWORD:TO expr 
+              (KEYWORD:STEP expr)? KEYWORD:THEN
+              statement
+            | (NEWLINE statements KEYWORD:END)
+
+WHILEEXPR   : KEYWORD:WHILE expr KEYWORD:THEN
+              statement
+            | (NEWLINE statements KEYWORD:END)
+
+WHENEXPR   : KEYWORD:WHILE expr KEYWORD:THEN
+              statement
+            | (NEWLINE statements KEYWORD:END)
+
+FUNCDEF     : KEYWORD:FUN IDENTIFIER?
+              LPAREN (IDENTIFIER (COMMA IDENTIFIER)*)? RPAREN
+              (ARROW expr)
+            | (NEWLINE statements KEYWORD:END)
+
+STRUCTDEF   : KEYWORD:FUN IDENTIFIER?
+              LPAREN (IDENTIFIER (COMMA IDENTIFIER)*)? RPAREN
+              (ARROW expr)
+            | (NEWLINE statements KEYWORD:END)
+
+TOKENS      : Name   : Token
+ASG         : asg    : =       ; basic assignment
+            : xpls   : +=      ; augmented addition
+            : xmns   : -=      ; augmented subtraction
+            : xmul   : *=      ; augmented multiplication
+            : xdiv   : /=      ; augmented division
+            : xmod   : %=      ; augmented modulus
+            : xpow   : ^=      ; augmented exponent
+
+LOGICAL     : and    : &
+            : or     : |
+            : not    : ~
+            : nand   : ~&
+            : nor    : ~|
+            : xor    : ><
+
+COMPARE     : eq     : ==
+            : ne     : !=
+            : lt     : <
+            : le     : <=
+            : gt     : >
+            : ge     : >=
+
+IDXOP       : lslc   : </
+            : rslc   : />
+            : at     : @
+
+IF          : if
+            : ?
+
+ELIF        : elif
+            : !?
+
+ELSE        : else
+            : !
+
+TYPE        : var
+            : int
+            : flt
+            : str
+            : lst
+            : map
+
+OTHERS      : dot    : .        ; properties are accessed with dot
+            : struct : ::       ; struct definitions begin with double colon
+            : cln    : :
+            : lpar   : (
+            : rpar   : )
+            : lbr    : \[
+            : rbr    : \]
+            : lcr    : {
+            : rcr    : }
+            : lit               ; a literal value like an integer or string
+
 ## Acknowledgements
 My biggest thank you needs to go to the great mind behind [CodePulse](https://www.youtube.com/@CodePulse).  Before taking on this project, I had never built a programming language at all.  I had written some scripts that could parse and emulate Assembly, but that is a far stretch from a full high level language.  I found his series on YouTube about building your own programming language, and I followed it step by step so I could learn how the whole process works, so basically the entire skeleton of the language is his code.  Once I got done with his tutorial and I saw how everything fits together, I wanted to completely build out the language with many new features.  I have already learned a great deal about language design, and have come across some surprising facts in doing so (e.g. static vs. dynamic typing can literally be implemented with one single line of code).  I have also gotten the chance to get creative with parts of the implementation -- for one, I completely rewrote the lexer to be a finite state machine programmable via text file, so you can change the definitions of tokens at will.  I appreciate anyone who takes the time to learn my language, and accepts it for the learning journey it is.  Again, all credit for the foundations of this language belongs exclusively to CodePulse.  Thank you so much to him for helping me learn how all of this works, and I hope I can do his code justice by building something awesome on top of it!
