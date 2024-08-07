@@ -192,6 +192,15 @@ class WhenNode:
         self.pos_end = self.body_node.pos_end
 
 
+class DeferNode:
+    def __init__(self, body_node, should_return_null):
+        self.body_node = body_node
+        self.should_return_null = should_return_null
+
+        self.pos_start = self.body_node.pos_start
+        self.pos_end = self.body_node.pos_end
+
+
 class ContinueNode:
     def __init__(self, pos_start, pos_end):
         self.pos_start = pos_start
