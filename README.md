@@ -517,8 +517,8 @@ This behavior can also be used to override the functionality of built in operato
     EXPR        : FUNCDEF
                 : STRUCTDEF
                 : PROXY
-                : const? TYPE? IDENTIFIER ASG EXPR
-                : const? TYPE? COMP ((LOGICAL) COMP)* (ASG EXPR)?
+                : const? static? global? TYPE? IDENTIFIER ASG EXPR
+                : COMP ((LOGICAL) COMP)* (ASG EXPR)?
 
     COMP        : not COMP
                 : ARITH (COMPARE ARITH)*
