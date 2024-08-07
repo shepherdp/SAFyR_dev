@@ -231,7 +231,7 @@ The body of the for loop follows a colon if it is a single statement, and inside
     >>> 12
     >>> 14
 
-*NOTE: determination of numerical types (e.g. integer and float) are performed IN THE LEXER.  If you write your for loop declaration as 'for i = 0..2', then SAFyR will interpret that line of code as 'for i = 0.0 2.0' and will throw an error. Dots MUST be separated from numerical characters by whitespace.*
+*NOTE: determination of numerical types (e.g. integer and float) are performed IN THE LEXER.  If you write your for loop declaration as 'for i = 0..2', then SAFyR will interpret that line of code as '`for i = 0.0 2.0`' and will throw an error. Dots MUST be separated from numerical characters by whitespace.*
 
 #### Foreach Loops
 
@@ -382,11 +382,44 @@ Functions can be defined with names, or as anonymous functions that can be store
 
     >>> 3
 
+#### Defer
+
+In SAFyR, the `defer` keyword can be invoked at any time within a function definition, and followed either by a color and a single statement on one line, or multiple statements surrounded by curly braces.  Any statements within a `defer` block will execute immediately prior to the function's `return` statement.  For example:
+
+    : doThings [] <~ {
+    
+        defer: del first                ; this statement will not execute here...
+        first = 1 + 2
+        second = 2 + 3
+        third = 3 + 4
+
+        ; ...it will execute here instead
+
+        return "success"
+    }
+
+or
+
+    : doThings [] <~ {
+    
+        defer {
+            del first
+            del second
+            del third
+        }
+        
+        first = 1 + 2
+        second = 2 + 3
+        third = 3 + 4
+
+        return "success"
+    }
+
 ### Structs
 
 Structs in SAFyR are, in their simplest form, collections of variables just like you would find in traditional C.  The syntax for creating a struct is the following:
 
-    : optional TYPENAME \[ optional arguments \] {
+    :: optional TYPENAME \[ optional arguments \] {
         prop1 = arg1
         prop2 = arg2
         ...
@@ -396,7 +429,7 @@ Structs in SAFyR are, in their simplest form, collections of variables just like
        instance properties, num and den, to those respective values.  I then create a variable
        called 'myfrac' of that type, and initialize it with the values 7 and 4. ;;
        
-    :Fraction [a b] {
+    :: Fraction [a b] {
         num = a
         den = b
     }
@@ -517,6 +550,7 @@ This behavior can also be used to override the functionality of built in operato
                 : TRYEXPR
                 : FUNC
                 : STRUCT
+                : DEFER
 
     LIST        : lbr ((EXPR)*)? rbr
 
@@ -553,6 +587,10 @@ This behavior can also be used to override the functionality of built in operato
     FUNCDEF     : cln IDENTIFIER? lbr (IDENTIFIER*)? inj lcr NEWLINE STATEMENTS rcr
 
     STRUCTDEF   : dcln IDENTIFIER lbr (IDENTIFIER*)? rbr lcr NEWLINE STATEMENTS rcr
+
+    DEFER       : defer
+                    cln statement
+                    | lcr NEWLINE STATEMENTS rcr
 
     PROXY       : dot IDENTIFIER inj EXPR
 
