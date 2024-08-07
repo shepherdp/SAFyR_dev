@@ -1453,6 +1453,12 @@ class TestInterpreterVariableAssignment(unittest.TestCase):
         RUN.visit(Parser(Lexer().tokenize(text).value).parse().node, context)
         self.assertEqual(context.symbol_table.symbols['a'], Number(1., t="FLT"))
 
+    def test_global_var(self):
+        text = ': setglobal [] <~ {\nglobal a = 47\n}\nsetglobal()'
+        context.symbol_table = get_sym_table()
+        RUN.visit(Parser(Lexer().tokenize(text).value).parse().node, context)
+        self.assertEqual(context.symbol_table.symbols['a'], Number(47))
+
 
 class TestInterpreterStringOperations(unittest.TestCase):
 
@@ -3366,8 +3372,14 @@ class TestInterpreterBasicFunctions(unittest.TestCase):
         RUN.visit(Parser(Lexer().tokenize(text).value).parse().node, context)
         self.assertEqual(context.symbol_table.symbols['a'], Number(2))
 
-    def test_named_func_with_defer(self):
+    def test_named_func_with_sl_defer(self):
         text = ':add [a b] <~{\ndefer: c = 10\nc = a + b\nreturn c\n}\na = add(4 2)'
+        context.symbol_table = get_sym_table()
+        RUN.visit(Parser(Lexer().tokenize(text).value).parse().node, context)
+        self.assertEqual(context.symbol_table.symbols['a'], Number(10))
+
+    def test_named_func_with_ml_defer(self):
+        text = ':add [a b] <~ {\ndefer {\nc = 10\n}\nc = a + b\nreturn c\n}\na = add(4 2)'
         context.symbol_table = get_sym_table()
         RUN.visit(Parser(Lexer().tokenize(text).value).parse().node, context)
         self.assertEqual(context.symbol_table.symbols['a'], Number(10))

@@ -315,6 +315,7 @@ class Interpreter:
                     curr = context
                     while curr.parent: curr = curr.parent
                     curr.symbol_table.globals.append(var_name)
+                    curr.symbol_table.set(var_name, value)
 
                 context.symbol_table.set(var_name, value)
 
