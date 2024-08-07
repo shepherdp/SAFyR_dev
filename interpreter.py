@@ -1,6 +1,7 @@
 from lexer import KWDS, Lexer
 from parser import (Parser, StringNode, ReferenceAssignNode,
-                    VarAccessNode, NumberNode, BinOpNode)
+                    VarAccessNode, NumberNode, BinOpNode,
+                    CallNode, DeferNode, ReturnNode)
 from typedef import *
 from errors import *
 
@@ -32,6 +33,17 @@ class Interpreter:
     def visit_CapsuleNode(self, node, context):
         res = RuntimeResult()
         elements = []
+        defers = [i for i in range(len(node.elements)) if isinstance(node.elements[i], DeferNode)]
+        if len(node.elements) > 0:
+            returnidx = -1
+            for idx in defers:
+                node.elements.append(node.elements.pop(idx).body_node)
+            for i in range(len(node.elements)):
+                if isinstance(node.elements[i], ReturnNode):
+                    returnidx = i
+                    break
+            if returnidx != -1: node.elements.append(node.elements.pop(returnidx))
+
         for el in node.elements:
             ret = res.register(self.visit(el, context))
             if res.should_return(): return res
@@ -648,6 +660,7 @@ class Interpreter:
                         p.update_context()
                         curr = None
                 elif isinstance(curr.left_node, BinOpNode): curr = curr.left_node
+                elif isinstance(curr.left_node, CallNode): curr = curr.left_node
             if isinstance(curr, VarAccessNode):
                 p = context.symbol_table.symbols[curr.var_name_tok.value]
                 if isinstance(p, Struct): p.update_context()
