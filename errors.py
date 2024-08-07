@@ -16,6 +16,14 @@ class SyntaxError(Exception):
         mystr += '^' * (self.pos_end.col - self.pos_start.col)
         return mystr
 
+    def __str__(self):
+        mystr = f'{self.error_name}: {self.details}\n'
+        mystr += f'  File {self.pos_start.fn}, line {self.pos_start.ln + 1}, col {self.pos_end.col}'
+        mystr += '\n  ~>   ' + self.pos_start.ftxt
+        mystr += '\n       ' + ' ' * self.pos_start.col
+        mystr += '^' * (self.pos_end.col - self.pos_start.col)
+        return mystr
+
 
 class IllegalInputCharacterError(SyntaxError):
     def __init__(self, pos_start, pos_end, details=''):
