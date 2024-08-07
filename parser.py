@@ -95,6 +95,17 @@ class Parser:
                 res.resid_err = None
             statements.append(statement)
 
+        retidx = -1
+        n = len(statements)
+        for i in range(n):
+            if isinstance(statements[i], ReturnNode):
+                retidx = i
+                break
+        if -1 < retidx < n - 1:
+            return res.failure(InvalidSyntaxError(statements[-1].pos_start,
+                                                  statements[-1].pos_end,
+                                                  "Return statement must come last"))
+
         return res.success(CapsuleNode(statements,
                                        pos_start,
                                        self.current_tok.pos_end.copy()))
