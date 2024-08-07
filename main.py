@@ -1,4 +1,4 @@
-from shell import Shell
+from safyr.shell import Shell
 
 def main():
     s = Shell()
