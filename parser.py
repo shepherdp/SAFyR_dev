@@ -443,6 +443,12 @@ class Parser:
             if res.error: return res
             return res.success(when_expr)
 
+        # register defer block
+        elif tok.matches(Token('KWD', 'defer')):
+            defer_expr = res.register(self.defer_expr())
+            if res.error: return res
+            return res.success(defer_expr)
+
         # register try/catch block
         elif tok.matches(Token('KWD', 'try')):
             try_expr = res.register(self.try_expr())
@@ -949,6 +955,52 @@ class Parser:
         return res.success(WhenNode(condition,
                                     body,
                                     False))
+
+    def defer_expr(self):
+        res = ParseResult()
+
+        if not self.current_tok.matches(Token('KWD', 'defer')):
+            return res.failure(InvalidSyntaxError(self.current_tok.pos_start,
+                                                  self.current_tok.pos_end,
+                                                  f"Expected 'defer'"))
+        res.register_advancement()
+        self.advance()
+
+        if self.current_tok.type == 'LCR':
+            res.register_advancement()
+            self.advance()
+
+            if not self.current_tok.type == 'BREAK':
+                return res.failure(InvalidSyntaxError(self.current_tok.pos_start,
+                                                      self.current_tok.pos_end,
+                                                      "Expected newline"))
+            res.register_advancement()
+            self.advance()
+
+            body = res.register(self.statements())
+            if res.error: return res
+
+            if not self.current_tok.type == 'RCR':
+                return res.failure(UnclosedScopeError(self.current_tok.pos_start,
+                                                      self.current_tok.pos_end,
+                                                      "Expected '}'"))
+            res.register_advancement()
+            self.advance()
+
+            return res.success(DeferNode(body,
+                                         True))
+
+        if not self.current_tok.matches(Token('OPS', ':')):
+            return res.failure(UnopenedScopeError(self.current_tok.pos_start,
+                                                  self.current_tok.pos_end,
+                                                  "Expected ':' or '{'"))
+        res.register_advancement()
+        self.advance()
+        body = res.register(self.statement())
+        if res.error: return res
+
+        return res.success(DeferNode(body,
+                                     False))
 
     def try_expr(self):
         res = ParseResult()
