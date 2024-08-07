@@ -300,7 +300,7 @@ class Interpreter:
                 else: value.static = False
 
             # if const keyword is used, set new value to constant
-            if node.const: value.const = True
+            if node.constvar: value.constvar = True
 
             # can only use bare assignment to create new value
             if op_tok == '=':
@@ -310,7 +310,14 @@ class Interpreter:
                     ##
                     value = value.copy()
                     ##
+
+                if node.globalvar:
+                    curr = context
+                    while curr.parent: curr = curr.parent
+                    curr.symbol_table.globals.append(var_name)
+
                 context.symbol_table.set(var_name, value)
+
             else: return res.failure(VariableAccessError(node.pos_start,
                                                          node.pos_end,
                                                          f'Symbol {var_name} doesn\'t exist'))
@@ -318,11 +325,11 @@ class Interpreter:
 
         # variable already exists
         else:
-            if og_val.const:
+            if og_val.constvar:
                 return res.failure(ConstantViolationError(node.pos_start,
                                                           node.pos_end,
                                                           f'Cannot change value of constant variable {var_name}'))
-            if node.statictype != 'default' or node.const:
+            if node.statictype != 'default' or node.constvar or node.globalvar:
                 return res.failure(InvalidSpecifierError(node.pos_start,
                                                          node.pos_end,
                                                          f'Specifiers not allowed on existing variable {var_name}.'))
@@ -365,7 +372,7 @@ class Interpreter:
 
                 value.static = True
 
-            value.const = og_val.const
+            value.constvar = og_val.constvar
             value.triggers = og_val.triggers
 
         if op_tok == '=':

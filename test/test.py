@@ -3366,6 +3366,12 @@ class TestInterpreterBasicFunctions(unittest.TestCase):
         RUN.visit(Parser(Lexer().tokenize(text).value).parse().node, context)
         self.assertEqual(context.symbol_table.symbols['a'], Number(2))
 
+    def test_named_func_with_defer(self):
+        text = ':add [a b] <~{\ndefer: c = 10\nc = a + b\nreturn c\n}\na = add(4 2)'
+        context.symbol_table = get_sym_table()
+        RUN.visit(Parser(Lexer().tokenize(text).value).parse().node, context)
+        self.assertEqual(context.symbol_table.symbols['a'], Number(10))
+
     # need tests for no argument functions and wrong number of arguments
 
 
@@ -3702,6 +3708,14 @@ class TestInterpreterBuiltinFunctions(unittest.TestCase):
         RUN.visit(Parser(Lexer().tokenize(text).value).parse().node, context)
         data = context.symbol_table.symbols['data']
         return self.assertTrue(data, '"ReAd TeSt"')
+
+    def test_basic_delete(self):
+        context.symbol_table = get_sym_table()
+        RUN.visit(Parser(Lexer().tokenize('a = 1').value).parse().node, context)
+        a = 'a' in context.symbol_table.symbols
+        RUN.visit(Parser(Lexer().tokenize('del a').value).parse().node, context)
+        nota = 'a' not in context.symbol_table.symbols
+        self.assertTrue(a and nota)
 
 
 class TestInterpreterChainedAccessOperators(unittest.TestCase):

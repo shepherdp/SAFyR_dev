@@ -98,11 +98,12 @@ class ReferenceAssignNode:
 
 class VarAssignNode:
     def __init__(self, var_name_tok, op_tok, value_node,
-                 const=False, statictype=None):
+                 constvar=False, globalvar=False, statictype=None):
         self.var_name_tok = var_name_tok
         self.op_tok = op_tok
         self.value_node = value_node
-        self.const = const
+        self.constvar = constvar
+        self.globalvar = globalvar
         self.statictype = statictype
 
         self.pos_start = self.var_name_tok.pos_start

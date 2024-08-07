@@ -132,12 +132,10 @@ class Parser:
             if self.current_tok.matches(Token('BREAK', None)):
                 res.register_advancement()
                 self.advance()
-            elif self.current_tok.matches(Token('EOF', None)):
-                pass
-            else:
-                return res.failure(InvalidSyntaxError(pos_start,
-                                                      self.current_tok.pos_end,
-                                                      f'Expected newline'))
+            elif self.current_tok.matches(Token('EOF', None)): pass
+            else: return res.failure(InvalidSyntaxError(pos_start,
+                                                        self.current_tok.pos_end,
+                                                        f'Expected newline'))
 
             return res.success(UseNode(fname))
 
@@ -202,10 +200,17 @@ class Parser:
 
         statictype = 'default'
         constvar = False
+        globalvar = False
 
         # check for constant declaration
         if self.current_tok.matches(Token('KWD', 'const')):
             constvar = True
+            res.register_advancement()
+            self.advance()
+
+        # check for global declaration
+        if self.current_tok.matches(Token('KWD', 'global')):
+            globalvar = True
             res.register_advancement()
             self.advance()
 
@@ -258,7 +263,9 @@ class Parser:
             return res.success(VarAssignNode(var_name,
                                              op_tok,
                                              expr,
-                                             const=constvar, statictype=statictype))
+                                             constvar=constvar,
+                                             globalvar=globalvar,
+                                             statictype=statictype))
 
         # try to read a comparison expression
         node = res.register(self.bin_op(self.comp_expr, ('AND', 'OR', 'NAND', 'NOR',
@@ -277,8 +284,7 @@ class Parser:
 
             expr = res.register(self.expr())
             if res.error: return res
-            if warn_msg:
-                self.warnings.append(warn_msg)
+            if warn_msg: self.warnings.append(warn_msg)
 
             # if we find an expression on the right hand side, create a node to
             # assign a value to the chained access expression

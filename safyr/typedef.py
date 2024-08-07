@@ -83,13 +83,13 @@ class Context:
 
 class Value:
     
-    def __init__(self, t=None, static=False, const=False):
+    def __init__(self, t=None, static=False, constvar=False):
         self.set_pos()
         self.set_context()
         self.value = None
         self.type = t
         self.static = static
-        self.const = const
+        self.constvar = constvar
         self.triggers = []
 
     def set_pos(self, pos_start=None, pos_end=None):
@@ -295,7 +295,7 @@ class Number(Value):
     def copy(self):
         copy = Number(self.value)
         copy.static = self.static
-        copy.const = self.const
+        copy.constvar = self.constvar
         copy.triggers = self.triggers
         copy.set_pos(self.pos_start, self.pos_end)
         copy.set_context(self.context)
@@ -440,7 +440,7 @@ class String(Value):
     def copy(self):
         copy = String(self.value)
         copy.static = self.static
-        copy.const = self.const
+        copy.constvar = self.constvar
         copy.triggers = self.triggers
         copy.set_pos(self.pos_start, self.pos_end)
         copy.set_context(self.context)
@@ -574,7 +574,7 @@ class List(Value):
     def copy(self):
         copy = List(self.elements)
         copy.static = self.static
-        copy.const = self.const
+        copy.constvar = self.constvar
         copy.triggers = self.triggers
         copy.set_pos(self.pos_start, self.pos_end)
         copy.set_context(self.context)
@@ -602,7 +602,7 @@ class Map(Value):
     def copy(self):
         copy = Map(self.elements)
         copy.static = self.static
-        copy.const = self.const
+        copy.constvar = self.constvar
         copy.triggers = self.triggers
         copy.set_pos(self.pos_start, self.pos_end)
         copy.set_context(self.context)
@@ -700,7 +700,7 @@ class Struct(Value):
     def copy(self):
         copy = Struct(deepcopy(self.properties), self.context, '')
         copy.static = self.static
-        copy.const = self.const
+        copy.constvar = self.constvar
         copy.triggers = self.triggers
         copy.instance_name = self.instance_name
         copy.set_pos(self.pos_start, self.pos_end)
@@ -825,7 +825,7 @@ class StructGenerator(BaseFunction):
         copy.set_pos(self.pos_start, self.pos_end)
         copy.properties = self.properties
         copy.static = self.static
-        copy.const = self.const
+        copy.constvar = self.constvar
         return copy
 
     def __repr__(self):
@@ -1193,7 +1193,7 @@ class File(Value):
         copy = File(self.fname, self.mode)
         copy.fobj = self.fobj
         copy.static = self.static
-        copy.const = self.const
+        copy.constvar = self.constvar
         copy.triggers = self.triggers
         copy.set_pos(self.pos_start, self.pos_end)
         return copy

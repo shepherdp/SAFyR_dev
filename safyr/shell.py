@@ -1,7 +1,4 @@
-from lexer import Lexer
-from parser import Parser
-from interpreter import *
-from sys import exit
+from .interpreter import *
 
 
 def help():
