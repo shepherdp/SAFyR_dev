@@ -3,6 +3,16 @@ from parser import Parser
 from interpreter import *
 from sys import exit
 
+
+def help():
+    print("Command          Effect")
+    print("________________________________________________________________________________")
+    print("help             Print this message")
+    print("q                Exit the shell")
+    print("run <filename>   Execute the code contained in filename.sfr (exclude the '.sfr')")
+    print("<expression>     Evaluate the SAFyR expression entered")
+
+
 class Shell:
 
     def __init__(self):
@@ -49,8 +59,7 @@ class Shell:
             cmd = input('>> ')
             if cmd == 'q': break
             if cmd == 'help':
-                print('Try typing one of the following commands to run the source files included:')
-                print()
+                help()
                 continue
 
             needsrun = False
