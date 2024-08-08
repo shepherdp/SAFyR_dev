@@ -25,6 +25,9 @@ class Interpreter:
                                               ).set_context(context).set_pos(node.pos_start, node.pos_end))
 
     def visit_StringNode(self, node, context):
+        if node.tok.type == 'FSTR':
+            return RuntimeResult().success(FormatString(node.tok.value,
+                                                  ).set_context(context).set_pos(node.pos_start, node.pos_end))
         return RuntimeResult().success(String(node.tok.value,
                                               ).set_context(context).set_pos(node.pos_start, node.pos_end))
 

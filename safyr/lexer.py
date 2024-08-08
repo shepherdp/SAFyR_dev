@@ -302,21 +302,29 @@ class Lexer:
 
         # track line and column numbers for error reporting
         if c == '\n':
-            if self.state[:2] == 'st':
+
+            if self.state == 'st1':
                 return res.failure(UnmatchedQuoteError(self.start_pos,
                                                        self.end_pos,
                                                        'Unmatched quotation mark'))
 
             # modify current position and other data to prepare for next token
-            self.end_pos = Position(self.pos, self.linenum, self.colnum, self.name, self.currline)
+            self.end_pos = Position(self.pos,
+                                    self.linenum,
+                                    self.colnum,
+                                    self.name,
+                                    self.currline)
             self.linenum += 1
             self.colnum = 0
             self.currline = ''
             self.linestart = self.pos + 1
-            self.token = ''
-            self.tokens.append(Token('BREAK',
-                                     None,
-                                     pos_start=self.start_pos, pos_end=self.end_pos))
+
+            if self.state != 'st2':
+                self.token = ''
+                self.tokens.append(Token('BREAK',
+                                         None,
+                                         pos_start=self.start_pos,
+                                         pos_end=self.end_pos))
 
         else: self.colnum += delta
 
@@ -339,25 +347,36 @@ class Lexer:
         if s[0] in DGT + '.':
             if '.' in s:
                 if s == '.': return res.success(Token('DOT', s,
-                                                      pos_start=self.start_pos, pos_end=self.end_pos))
+                                                      pos_start=self.start_pos,
+                                                      pos_end=self.end_pos))
                 if s == '..': return res.success(Token('OPS', s,
-                                                       pos_start=self.start_pos, pos_end=self.end_pos))
+                                                       pos_start=self.start_pos,
+                                                       pos_end=self.end_pos))
 
                 return res.success(Token('FLT', float(s),
-                                         pos_start=self.start_pos, pos_end=self.end_pos))
+                                         pos_start=self.start_pos,
+                                         pos_end=self.end_pos))
             else: return res.success(Token('INT', int(s),
-                                           pos_start=self.start_pos, pos_end=self.end_pos))
+                                           pos_start=self.start_pos,
+                                           pos_end=self.end_pos))
 
         # symbol token
         if s[0] in UPR + LWR:
             if s in KWDS: return res.success(Token('KWD', s,
-                                                   pos_start=self.start_pos, pos_end=self.end_pos))
+                                                   pos_start=self.start_pos,
+                                                   pos_end=self.end_pos))
             return res.success(Token('SYM', s,
-                                     pos_start=self.start_pos, pos_end=self.end_pos))
+                                     pos_start=self.start_pos,
+                                     pos_end=self.end_pos))
 
         # string token
-        if s[0] in '\'"':
+        if s[0] == '"':
             return res.success(Token('STR', s[1:-1],
+                                     pos_start=self.start_pos,
+                                     pos_end=self.end_pos))
+
+        if s[0] == "'":
+            return res.success(Token('FSTR', s[1:-1],
                                      pos_start=self.start_pos,
                                      pos_end=self.end_pos))
 
@@ -367,15 +386,18 @@ class Lexer:
                 return res.failure(IllegalTokenFormatError(self.start_pos,
                                                            self.end_pos,
                                                            f'Token [{s}] not supported.'))
-            if s in KWDS:
-                if s in KWDS: return res.success(Token('KWD', s,
-                                                       pos_start=self.start_pos, pos_end=self.end_pos))
+
+            if s in KWDS: return res.success(Token('KWD', s,
+                                                   pos_start=self.start_pos,
+                                                   pos_end=self.end_pos))
 
             if s in OPNAMES: return res.success(Token(OPNAMES[s], s,
-                                                      pos_start=self.start_pos, pos_end=self.end_pos))
+                                                      pos_start=self.start_pos,
+                                                      pos_end=self.end_pos))
 
             return res.success(Token('OPS', s,
-                                     pos_start=self.start_pos, pos_end=self.end_pos))
+                                     pos_start=self.start_pos,
+                                     pos_end=self.end_pos))
 
     def tokenize(self, text=None):
         res = LexResult()

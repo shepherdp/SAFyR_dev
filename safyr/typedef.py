@@ -453,6 +453,40 @@ class String(Value):
         return f'"{self.value}"'
 
 
+class FormatString(String):
+
+    def __init__(self, value):
+        super().__init__(value)
+
+    def __repr__(self):
+        reprstring = "'"
+        escapes = [i for i in range(len(self.value)) if self.value[i] == '\\']
+        i = 0
+        while i < len(self.value):
+            if i in escapes:
+                match self.value[i+1]:
+                    case 'n': reprstring += '\n'
+                    case 't': reprstring += '\t'
+                    case '\\': reprstring += '\\'
+                    case _: return None, InvalidSyntaxError(self.pos_start,
+                                                            self.pos_end,
+                                                            f"Unknown escape character {self.value[i+1]}")
+                i += 2
+            else:
+                reprstring += self.value[i]
+                i += 1
+        return reprstring + "'"
+
+    def copy(self):
+        copy = FormatString(self.value)
+        copy.static = self.static
+        copy.constvar = self.constvar
+        copy.triggers = self.triggers
+        copy.set_pos(self.pos_start, self.pos_end)
+        copy.set_context(self.context)
+        return copy
+
+
 class List(Value):
     
     def __init__(self, elements):
@@ -660,6 +694,27 @@ class Map(Value):
 
         elem = self.elements[other]
         return elem, None
+
+
+class File(Value):
+
+    def __init__(self, fname, mode):
+        super().__init__(t='FILE')
+        self.fname = fname
+        self.mode = mode
+        self.fobj = None
+
+    def __repr__(self):
+        return f'<file> {self.fname}'
+
+    def copy(self):
+        copy = File(self.fname, self.mode)
+        copy.fobj = self.fobj
+        copy.static = self.static
+        copy.constvar = self.constvar
+        copy.triggers = self.triggers
+        copy.set_pos(self.pos_start, self.pos_end)
+        return copy
     
 
 # I want to get rid of this, but it gets the job done for now.
@@ -1176,24 +1231,3 @@ BuiltInFunction.close = BuiltInFunction("close")
 BuiltInFunction.range = BuiltInFunction("range")
 BuiltInFunction.len = BuiltInFunction("len")
 BuiltInFunction.rand = BuiltInFunction("rand")
-
-
-class File(Value):
-    
-    def __init__(self, fname, mode):
-        super().__init__(t='FILE')
-        self.fname = fname
-        self.mode = mode
-        self.fobj = None
-
-    def __repr__(self):
-        return f'<file> {self.fname}'
-
-    def copy(self):
-        copy = File(self.fname, self.mode)
-        copy.fobj = self.fobj
-        copy.static = self.static
-        copy.constvar = self.constvar
-        copy.triggers = self.triggers
-        copy.set_pos(self.pos_start, self.pos_end)
-        return copy

@@ -391,7 +391,7 @@ class Parser:
             return res.success(NumberNode(tok))
 
         # register string
-        elif tok.type == 'STR':
+        elif 'STR' in tok.type:
             res.register_advancement()
             self.advance()
             return res.success(StringNode(tok))
