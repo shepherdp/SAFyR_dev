@@ -370,8 +370,8 @@ class Parser:
 
                     if self.current_tok.type == 'EOF':
                         return res.failure(PrematureEOFError(self.current_tok.pos_start,
-                                                              self.current_tok.pos_end,
-                                                              f"Expected ')'"))
+                                                             self.current_tok.pos_end,
+                                                             f"Expected ')'"))
 
                 res.register_advancement()
                 self.advance()

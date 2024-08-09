@@ -79,6 +79,10 @@ A variable type keyword and/or constant keyword can only be used at initializati
     int a = "a string" ; a throws an error because the string value will not automatically cast to int
     int a = 5.75       ; a is an integer with the value 5 due to truncation
 
+A variable initialization preceded by the `global` keyword are added to the interpreter's list of global variables, and thus are available from within any scope in the program.
+
+    global a = 12      ; the value of a can be accessed from all scopes
+
 ### Operators
 SAFyR provides all the typical operators for a programming language (+, -, *, /, %, and ^ for exponentiation, as well as the same operators followed by '=') as well as a few others.  The '@' operator is used for element access (equivalent to the `[idx]` in `mylist[idx]`), and can be used on any data type.  Lists and strings also have access to the 'sliceleft' and 'sliceright' (`</` and `/>`)operators, which allow you to grab the leftmost or rightmost portions of the value.  Lists and strings also have specific behaviors relative to many of the basic operators.
 

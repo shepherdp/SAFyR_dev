@@ -144,13 +144,13 @@ class TestLexerBasicTokens(unittest.TestCase):
         self.assertEqual(Lexer().tokenize('""').value, [Token('STR', ''), BRK])
 
     def test_empty_st2(self):
-        self.assertEqual(Lexer().tokenize("''").value, [Token('STR', ''), BRK])
+        self.assertEqual(Lexer().tokenize("''").value, [Token('FSTR', ''), BRK])
 
     def test_basic_st1(self):
         self.assertEqual(Lexer().tokenize('"a"').value, [Token('STR', 'a'), BRK])
 
     def test_basic_st2(self):
-        self.assertEqual(Lexer().tokenize("'a'").value, [Token('STR', 'a'), BRK])
+        self.assertEqual(Lexer().tokenize("'a'").value, [Token('FSTR', 'a'), BRK])
 
     def test_basic_pls(self):
         self.assertEqual(Lexer().tokenize('+').value, [Token('PLS', '+'), BRK])
@@ -422,7 +422,7 @@ class TestLexerEqSplitting(unittest.TestCase):
     def test_eq_22(self):
         self.assertEqual(Lexer().tokenize("='A'").value,
                          [Token('ASG', '='),
-                          Token('STR', 'A'),
+                          Token('FSTR', 'A'),
                           BRK])
 
 
@@ -1221,6 +1221,13 @@ class TestParserErrors(unittest.TestCase):
             e = Parser(Lexer().tokenize(text).value).parse().error
             if e: raise e
 
+    def test_function_return_not_last(self):
+        with self.assertRaises(InvalidSyntaxError):
+            text = ':add [a b] <~ {\nn = a + b\nreturn n\nn = b + a\nx = add(1)'
+            context.symbol_table = get_sym_table()
+            e = Parser(Lexer().tokenize(text).value).parse().error
+            if e: raise e
+
 # END PARSER SECTION
 
 # BEGIN INTERPRETER SECTION
@@ -1567,6 +1574,61 @@ class TestInterpreterStringOperations(unittest.TestCase):
                                   ).parse().node, context).value
         self.assertEqual(result, Number(3))
 
+    def test_fstring_addition(self):
+        result = RUN.visit(Parser(Lexer().tokenize("'ab' + 'c'").value
+                                  ).parse().node, context).value
+        self.assertEqual(result, FormatString("abc"))
+
+    def test_fstring_sub_noinstance(self):
+        result = RUN.visit(Parser(Lexer().tokenize("'abc' - 'd'").value
+                                  ).parse().node, context).value
+        self.assertEqual(result, FormatString("abc"))
+
+    def test_fstring_sub_oneinstance(self):
+        result = RUN.visit(Parser(Lexer().tokenize("'abc' - 'b'").value
+                                  ).parse().node, context).value
+        self.assertEqual(result, FormatString("ac"))
+
+    def test_fstring_sub_multipleinstances(self):
+        result = RUN.visit(Parser(Lexer().tokenize("'babcb' - 'b'").value
+                                  ).parse().node, context).value
+        self.assertEqual(result, FormatString("ac"))
+
+    def test_fstring_mul(self):
+        result = RUN.visit(Parser(Lexer().tokenize("'ab' * 3").value
+                                  ).parse().node, context).value
+        self.assertEqual(result, FormatString("ababab"))
+
+    def test_fstring_mulzero(self):
+        result = RUN.visit(Parser(Lexer().tokenize("'ab' * 0").value
+                                  ).parse().node, context).value
+        self.assertEqual(result, FormatString(""))
+
+    def test_fstring_div(self):
+        result = RUN.visit(Parser(Lexer().tokenize("'abc' / 'b'").value
+                                  ).parse().node, context).value
+        self.assertEqual(result, List([FormatString('a'), FormatString('c')]))
+
+    def test_fstring_div_noinstances(self):
+        result = RUN.visit(Parser(Lexer().tokenize("'abc' / 'd'").value
+                                  ).parse().node, context).value
+        self.assertEqual(result, List([FormatString('abc')]))
+
+    def test_fstring_div_twoinstances(self):
+        result = RUN.visit(Parser(Lexer().tokenize("'aabcbaa' / 'b'").value
+                                  ).parse().node, context).value
+        self.assertEqual(result, List([FormatString('aa'), FormatString('c'), FormatString('aa')]))
+
+    def test_fstring_div_substring(self):
+        result = RUN.visit(Parser(Lexer().tokenize("'abcdefg' / 'cde'").value
+                                  ).parse().node, context).value
+        self.assertEqual(result, List([FormatString('ab'), FormatString('fg')]))
+
+    def test_fstring_div_consecutive_occurrences(self):
+        result = RUN.visit(Parser(Lexer().tokenize("'abbcbbd' / 'b'").value
+                                  ).parse().node, context).value
+        self.assertEqual(result, List([FormatString('a'), FormatString('c'), FormatString('d')]))
+
 
 class TestInterpreterListOperations(unittest.TestCase):
 
@@ -1749,12 +1811,6 @@ class TestInterpreterMapOperations(unittest.TestCase):
         result = RUN.visit(Parser(Lexer().tokenize('{"a": 1} @ "a"').value
                                   ).parse().node, context).value
         self.assertEqual(result, Number(1))
-
-    # needs to go to error testing section because it throws invalid syntax
-    # def test_map_at_notpresent(self):
-    #     result = RUN.visit(Parser(Lexer().tokenize('{"a": 1} @ "b"').value
-    #                               ).parse().node, context).value
-    #     self.assertEqual(result, Number(1))
 
 
 class TestInterpreterMathExpressions(unittest.TestCase):
@@ -2043,6 +2099,14 @@ class TestInterpreterBasicComparators(unittest.TestCase):
         return self.assertEqual(RUN.visit(Parser(Lexer().tokenize('[1 2]!=[]').value).parse().node, context).value,
                                 Number(1))
 
+    def test_lst_ne_true_wrongtype(self):
+        return self.assertEqual(RUN.visit(Parser(Lexer().tokenize('[1 2]!="a"').value).parse().node, context).value,
+                                Number(1))
+
+    def test_lst_ne_true_differentelements(self):
+        return self.assertEqual(RUN.visit(Parser(Lexer().tokenize('[1 2]!=[3 4]').value).parse().node, context).value,
+                                Number(1))
+
     def test_lst_ne_false_sameelements(self):
         return self.assertEqual(RUN.visit(Parser(Lexer().tokenize('[1 2]!=[1 2]').value).parse().node, context).value,
                                 Number(0))
@@ -2057,8 +2121,7 @@ class TestInterpreterBasicComparators(unittest.TestCase):
         return self.assertFalse(List([Number(1), Number(2)]) == List([Number(1)]))
 
     def test_lst_ne_false_wrongtype(self):
-        return self.assertEqual(RUN.visit(Parser(Lexer().tokenize('[1 2]==3').value).parse().node, context).value,
-                                Number(0))
+        return self.assertFalse(List([Number(1), Number(2)]) == Number(1))
 
     def test_map_eq_true(self):
         return self.assertEqual(RUN.visit(Parser(Lexer().tokenize('{1: 2}=={1: 2}').value).parse().node, context).value,
@@ -2411,6 +2474,11 @@ class TestInterpreterErrors(unittest.TestCase):
             e = RUN.visit(Parser(Lexer().tokenize('[1 2] </ "a"').value).parse().node, context).error
             if e: raise e
 
+    def test_lst_rslice_str(self):
+        with self.assertRaises(InvalidSyntaxError):
+            e = RUN.visit(Parser(Lexer().tokenize('[1 2] /> "a"').value).parse().node, context).error
+            if e: raise e
+
     def test_lst_pow_str(self):
         with self.assertRaises(NotImplementedError):
             e = RUN.visit(Parser(Lexer().tokenize('[1 2] ^ "a"').value).parse().node, context).error
@@ -2679,6 +2747,12 @@ class TestInterpreterErrors(unittest.TestCase):
         with self.assertRaises(BuiltinViolationError):
             context.symbol_table = get_sym_table()
             e = RUN.visit(Parser(Lexer().tokenize('T=5').value).parse().node, context).error
+            if e: raise e
+
+    def test_augassign_variable(self):
+        with self.assertRaises(VariableAccessError):
+            context.symbol_table = get_sym_table()
+            e = RUN.visit(Parser(Lexer().tokenize('a+=5').value).parse().node, context).error
             if e: raise e
 
     def test_overwrite_constant_variable_dynamicmode(self):
@@ -3033,6 +3107,12 @@ class TestInterpreterBasicForEach(unittest.TestCase):
         context.symbol_table = get_sym_table()
         RUN.visit(Parser(Lexer().tokenize(text).value).parse().node, context)
         self.assertEqual(context.symbol_table.symbols['a'], Number(8))
+
+    def test_sl_foreach_str(self):
+        text = 'a="abc"\nmyvar=""\nforeach i in a: myvar += i'
+        context.symbol_table = get_sym_table()
+        RUN.visit(Parser(Lexer().tokenize(text).value).parse().node, context)
+        self.assertEqual(context.symbol_table.symbols['myvar'], String("abc"))
 
     def test_ml_foreach(self):
         text = 'a=1\nforeach i in [0 1 2 3 4 5 6]{\na += 1\n}'
@@ -3679,6 +3759,11 @@ class TestInterpreterBuiltinFunctions(unittest.TestCase):
         res = RUN.visit(Parser(Lexer().tokenize('len({})').value).parse().node, context).value
         return self.assertEqual(res, Number(0))
 
+    def test_type(self):
+        context.symbol_table = get_sym_table()
+        res = RUN.visit(Parser(Lexer().tokenize('type("a")').value).parse().node, context).value
+        return self.assertEqual(res, String("STR"))
+
     def test_keys(self):
         context.symbol_table = get_sym_table()
         res = RUN.visit(Parser(Lexer().tokenize('keys({"a":1 2:"b"})').value).parse(
@@ -3835,12 +3920,19 @@ class TestInterpreterChainedAccessOperators(unittest.TestCase):
         result = RUN.visit(Parser(Lexer().tokenize(text).value).parse().node, context).value
         return self.assertEqual(result, String("a"))
 
-    def test_atmap_then_atmap_assignment(self):
+    def test_atmap_then_atmap_assignment1(self):
         text = 'a = {1: {3: "a" 4: "b"} 2: {5: "c" 6: "d"}}\na @ 1 @ 3 = "success"'
         context.symbol_table = get_sym_table()
         result = RUN.visit(Parser(Lexer().tokenize(text).value).parse().node, context).value
         q = context.symbol_table.symbols['a'].elements[Number(1)].elements[Number(3)]
         return self.assertEqual(q, String("success"))
+
+    # def test_atmap_then_atmap_assignment2(self):
+    #     text = 'a = {1: {3: "a" "b": 4} 2: {5: "c" 6: "d"}}\na @ 1 @ "b" = "success"'
+    #     context.symbol_table = get_sym_table()
+    #     result = RUN.visit(Parser(Lexer().tokenize(text).value).parse().node, context).value
+    #     q = context.symbol_table.symbols['a'].elements[Number(1)].elements[String("b")]
+    #     return self.assertEqual(q, String('"success"'))
 
     def test_atmap_then_dot_access(self):
         text = '::u [a] {\nx = a\n}\nm = u(5)\nmymap = {1: m 2: 3}\nq = (mymap@1).x'

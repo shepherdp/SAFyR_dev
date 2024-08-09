@@ -92,6 +92,10 @@ class Value:
         self.constvar = constvar
         self.triggers = []
 
+    def replace(self, other):
+        self = other
+        return self
+
     def set_pos(self, pos_start=None, pos_end=None):
         self.pos_start = pos_start
         self.pos_end = pos_end
@@ -477,6 +481,27 @@ class FormatString(String):
                 i += 1
         return reprstring + "'"
 
+    def add(self, other):
+        if isinstance(other, String):
+            return FormatString(self.value + other.value).set_context(self.context), None
+        else: return None, Value.illegal_op(self, other)
+
+    def sub(self, other):
+        if isinstance(other, String):
+            return FormatString(self.value.replace(other.value, '')).set_context(self.context), None
+        else: return None, Value.illegal_op(self, other)
+
+    def mul(self, other):
+        if isinstance(other, Number):
+            return FormatString(self.value * other.value).set_context(self.context), None
+        else: return None, Value.illegal_op(self, other)
+
+    def div(self, other):
+        if isinstance(other, String):
+            ret = [s for s in self.value.split(other.value) if s]
+            return List([FormatString(v) for v in ret]).set_context(self.context), None
+        else: return None, Value.illegal_op(self, other)
+
     def copy(self):
         copy = FormatString(self.value)
         copy.static = self.static
@@ -564,7 +589,7 @@ class List(Value):
         val = other.value
         if other.type != 'INT':
             return None, InvalidSyntaxError(self.pos_start, self.pos_end,
-                                            "Input to '@' must be INT")
+                                            "Input to '/>' must be INT")
         elif other.value >= len(self.elements):
             val = len(self.elements)
         newlist = self.copy()
@@ -604,6 +629,9 @@ class List(Value):
             if self.elements[i] != other.elements[i]:
                 return Number(1), None
         return Number(0), None
+
+    def replace(self, idx, other):
+        self.elements[idx.value] = other
 
     def copy(self):
         copy = List(self.elements)

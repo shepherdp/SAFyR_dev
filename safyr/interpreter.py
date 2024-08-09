@@ -209,7 +209,8 @@ class Interpreter:
         parents = [c]
         if parent:
             for i in childidxs:
-                if isinstance(c, Struct): c = c.context.symbol_table.symbols[i.value]
+                if isinstance(c, Struct):
+                    c = c.context.symbol_table.symbols[i.value]
                 elif isinstance(c, List):
                     try: c = c.elements[i.value]
                     except: c = c.elements[i]
@@ -228,9 +229,9 @@ class Interpreter:
                 case _: return res.failure(InvalidOperationTokenError(node.pos_start,
                                                                       node.pos_end,
                                                                       f'Expected assignment operator, got {op_tok}'))
-            # change the object's value directly
-            # there is still an issue here: if c is a Number, there is nothing stopping me from
-            # giving that int a string value without changing it to a String object
+
+            # parents[-2].replace(i, value)
+
             c.value = value.value
 
         # iterate back through chain of parents to update their local symbol tables
@@ -497,6 +498,8 @@ class Interpreter:
                                                     f'Expected container, got {type(container)}'))
 
         for elem in capsule:
+            if isinstance(capsule, str):
+                elem = String(elem)
             context.symbol_table.set(node.var_name_tok.value, elem)
             result = res.register(self.visit(node.body_node, context))
             if (res.should_return() and

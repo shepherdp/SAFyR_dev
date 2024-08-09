@@ -55,8 +55,8 @@
         </aside>
         <h2>
             <span class="text">801 statements &nbsp;</span>
-            <button type="button" class="run button_toggle_run" value="run" data-shortcut="r" title="Toggle lines run">774<span class="text"> run</span></button>
-            <button type="button" class="mis show_mis button_toggle_mis" value="mis" data-shortcut="m" title="Toggle lines missing">27<span class="text"> missing</span></button>
+            <button type="button" class="run button_toggle_run" value="run" data-shortcut="r" title="Toggle lines run">775<span class="text"> run</span></button>
+            <button type="button" class="mis show_mis button_toggle_mis" value="mis" data-shortcut="m" title="Toggle lines missing">26<span class="text"> missing</span></button>
             <button type="button" class="exc show_exc button_toggle_exc" value="exc" data-shortcut="x" title="Toggle lines excluded">0<span class="text"> excluded</span></button>
         </h2>
         <p class="text">
@@ -65,7 +65,7 @@
             <a id="nextFileLink" class="nav" href="z_ecdcdfccb918c6d7_result_py.html">&#xbb; next</a>
             &nbsp; &nbsp; &nbsp;
             <a class="nav" href="https://coverage.readthedocs.io/en/7.6.1">coverage.py v7.6.1</a>,
-            created at 2024-08-07 15:55 -0400
+            created at 2024-08-09 02:52 -0400
         </p>
         <aside class="hidden">
             <button type="button" class="button_next_chunk" data-shortcut="j"></button>
@@ -184,7 +184,7 @@
     <p class="run"><span class="n"><a id="t102" href="#t102">102</a></span><span class="t">                <span class="nam">retidx</span> <span class="op">=</span> <span class="nam">i</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t103" href="#t103">103</a></span><span class="t">                <span class="key">break</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t104" href="#t104">104</a></span><span class="t">        <span class="key">if</span> <span class="op">-</span><span class="num">1</span> <span class="op">&lt;</span> <span class="nam">retidx</span> <span class="op">&lt;</span> <span class="nam">n</span> <span class="op">-</span> <span class="num">1</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
-    <p class="mis show_mis"><span class="n"><a id="t105" href="#t105">105</a></span><span class="t">            <span class="key">return</span> <span class="nam">res</span><span class="op">.</span><span class="nam">failure</span><span class="op">(</span><span class="nam">InvalidSyntaxError</span><span class="op">(</span><span class="nam">statements</span><span class="op">[</span><span class="op">-</span><span class="num">1</span><span class="op">]</span><span class="op">.</span><span class="nam">pos_start</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t105" href="#t105">105</a></span><span class="t">            <span class="key">return</span> <span class="nam">res</span><span class="op">.</span><span class="nam">failure</span><span class="op">(</span><span class="nam">InvalidSyntaxError</span><span class="op">(</span><span class="nam">statements</span><span class="op">[</span><span class="op">-</span><span class="num">1</span><span class="op">]</span><span class="op">.</span><span class="nam">pos_start</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t106" href="#t106">106</a></span><span class="t">                                                  <span class="nam">statements</span><span class="op">[</span><span class="op">-</span><span class="num">1</span><span class="op">]</span><span class="op">.</span><span class="nam">pos_end</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t107" href="#t107">107</a></span><span class="t">                                                  <span class="str">"Return statement must come last"</span><span class="op">)</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t108" href="#t108">108</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
@@ -452,8 +452,8 @@
     <p class="pln"><span class="n"><a id="t370" href="#t370">370</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t371" href="#t371">371</a></span><span class="t">                    <span class="key">if</span> <span class="nam">self</span><span class="op">.</span><span class="nam">current_tok</span><span class="op">.</span><span class="nam">type</span> <span class="op">==</span> <span class="str">'EOF'</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t372" href="#t372">372</a></span><span class="t">                        <span class="key">return</span> <span class="nam">res</span><span class="op">.</span><span class="nam">failure</span><span class="op">(</span><span class="nam">PrematureEOFError</span><span class="op">(</span><span class="nam">self</span><span class="op">.</span><span class="nam">current_tok</span><span class="op">.</span><span class="nam">pos_start</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
-    <p class="pln"><span class="n"><a id="t373" href="#t373">373</a></span><span class="t">                                                              <span class="nam">self</span><span class="op">.</span><span class="nam">current_tok</span><span class="op">.</span><span class="nam">pos_end</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
-    <p class="pln"><span class="n"><a id="t374" href="#t374">374</a></span><span class="t">                                                              <span class="fst">f"</span><span class="fst">Expected ')'</span><span class="fst">"</span><span class="op">)</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
+    <p class="pln"><span class="n"><a id="t373" href="#t373">373</a></span><span class="t">                                                             <span class="nam">self</span><span class="op">.</span><span class="nam">current_tok</span><span class="op">.</span><span class="nam">pos_end</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
+    <p class="pln"><span class="n"><a id="t374" href="#t374">374</a></span><span class="t">                                                             <span class="fst">f"</span><span class="fst">Expected ')'</span><span class="fst">"</span><span class="op">)</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t375" href="#t375">375</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t376" href="#t376">376</a></span><span class="t">                <span class="nam">res</span><span class="op">.</span><span class="nam">register_advancement</span><span class="op">(</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t377" href="#t377">377</a></span><span class="t">                <span class="nam">self</span><span class="op">.</span><span class="nam">advance</span><span class="op">(</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
@@ -473,7 +473,7 @@
     <p class="run"><span class="n"><a id="t391" href="#t391">391</a></span><span class="t">            <span class="key">return</span> <span class="nam">res</span><span class="op">.</span><span class="nam">success</span><span class="op">(</span><span class="nam">NumberNode</span><span class="op">(</span><span class="nam">tok</span><span class="op">)</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t392" href="#t392">392</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t393" href="#t393">393</a></span><span class="t">        <span class="com"># register string</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run"><span class="n"><a id="t394" href="#t394">394</a></span><span class="t">        <span class="key">elif</span> <span class="nam">tok</span><span class="op">.</span><span class="nam">type</span> <span class="op">==</span> <span class="str">'STR'</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t394" href="#t394">394</a></span><span class="t">        <span class="key">elif</span> <span class="str">'STR'</span> <span class="key">in</span> <span class="nam">tok</span><span class="op">.</span><span class="nam">type</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t395" href="#t395">395</a></span><span class="t">            <span class="nam">res</span><span class="op">.</span><span class="nam">register_advancement</span><span class="op">(</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t396" href="#t396">396</a></span><span class="t">            <span class="nam">self</span><span class="op">.</span><span class="nam">advance</span><span class="op">(</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t397" href="#t397">397</a></span><span class="t">            <span class="key">return</span> <span class="nam">res</span><span class="op">.</span><span class="nam">success</span><span class="op">(</span><span class="nam">StringNode</span><span class="op">(</span><span class="nam">tok</span><span class="op">)</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
@@ -1420,7 +1420,7 @@
             <a class="nav" href="z_ecdcdfccb918c6d7_result_py.html">&#xbb; next</a>
             &nbsp; &nbsp; &nbsp;
             <a class="nav" href="https://coverage.readthedocs.io/en/7.6.1">coverage.py v7.6.1</a>,
-            created at 2024-08-07 15:55 -0400
+            created at 2024-08-09 02:52 -0400
         </p>
     </div>
 </footer>
