@@ -46,7 +46,7 @@ def get_sym_table():
 
 
 RUN = Interpreter()
-context = Context('<test>')
+context = Context('<test>', root=os.path.join(os.getcwd(), 'test'))
 
 
 class TestLexerErrors(unittest.TestCase):
@@ -2827,7 +2827,7 @@ class TestInterpreterErrors(unittest.TestCase):
             if e: raise e
 
     def test_basic_moduleimport_fail(self):
-        with self.assertRaises(ModuleImportError):
+        with self.assertRaises(ModuleNotFoundError):
             text = 'use moduletestfail\na = add(1 2)'
             context.symbol_table = get_sym_table()
             e = RUN.visit(Parser(Lexer().tokenize(text).value).parse().node, context).error
@@ -3927,12 +3927,12 @@ class TestInterpreterChainedAccessOperators(unittest.TestCase):
         q = context.symbol_table.symbols['a'].elements[Number(1)].elements[Number(3)]
         return self.assertEqual(q, String("success"))
 
-    # def test_atmap_then_atmap_assignment2(self):
-    #     text = 'a = {1: {3: "a" "b": 4} 2: {5: "c" 6: "d"}}\na @ 1 @ "b" = "success"'
-    #     context.symbol_table = get_sym_table()
-    #     result = RUN.visit(Parser(Lexer().tokenize(text).value).parse().node, context).value
-    #     q = context.symbol_table.symbols['a'].elements[Number(1)].elements[String("b")]
-    #     return self.assertEqual(q, String('"success"'))
+    def test_atmap_then_atmap_assignment2(self):
+        text = 'a = {1: {3: "a" "b": 4} 2: {5: "c" 6: "d"}}\na @ 1 @ "b" = "success"'
+        context.symbol_table = get_sym_table()
+        result = RUN.visit(Parser(Lexer().tokenize(text).value).parse().node, context).value
+        q = context.symbol_table.symbols['a'].elements[Number(1)].elements[String("b")]
+        return self.assertEqual(q, String("success"))
 
     def test_atmap_then_dot_access(self):
         text = '::u [a] {\nx = a\n}\nm = u(5)\nmymap = {1: m 2: 3}\nq = (mymap@1).x'

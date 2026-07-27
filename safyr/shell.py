@@ -47,7 +47,7 @@ class Shell:
         global_symbol_table.set("len", BuiltInFunction.len)
         global_symbol_table.set("type", BuiltInFunction.type)
 
-        context = Context('<program>')
+        context = Context('<program>', root=os.getcwd())
         context.symbol_table = global_symbol_table
         context.symbol_table.globals = list(global_symbol_table.symbols.keys())
 
@@ -87,7 +87,7 @@ class Shell:
                     print(f'Exception encountered in parser:\n\t{ast.error}')
                     continue
 
-                context = Context('<program>')
+                context = Context('<program>', root=os.getcwd())
                 context.symbol_table = global_symbol_table
                 result = Interpreter().visit(ast.node, context)
                 if result.error:

@@ -74,8 +74,9 @@ class SymbolTable:
 
 class Context:
     
-    def __init__(self, display_name, parent=None, parent_entry_pos=None):
+    def __init__(self, display_name, parent=None, parent_entry_pos=None, root='.'):
         self.display_name = display_name
+        self.root = root
         self.parent = parent
         self.parent_entry_pos = parent_entry_pos
         self.symbol_table = None
@@ -799,7 +800,7 @@ class BaseFunction(Value):
         self.name = name or "<anonymous>"
 
     def generate_new_context(self):
-        new_context = Context(self.name, self.context, self.pos_start)
+        new_context = Context(self.name, self.context, self.pos_start, root=self.context.root)
         new_context.symbol_table = SymbolTable(new_context.parent.symbol_table)
         return new_context
 
