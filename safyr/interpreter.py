@@ -206,33 +206,6 @@ class Interpreter:
                 else: curr_node = curr_node.left_node
 
         c = parent
-        # parents = [c]
-        # if parent:
-        #     for i in childidxs:
-        #         if isinstance(c, Struct):
-        #             c = c.context.symbol_table.symbols[i.value]
-        #         elif isinstance(c, List):
-        #             try: c = c.elements[i.value]
-        #             except: c = c.elements[i]
-        #         elif isinstance(c, Map): c = c.elements[i]
-        #         parents.append(c)
-
-        #     op_tok = node.op_tok.value
-        #     match op_tok:
-        #         case '=': pass
-        #         case '+=': value = c.add(value)[0]
-        #         case '-=': value = c.sub(value)[0]
-        #         case '*=': value = c.mul(value)[0]
-        #         case '/=': value = c.div(value)[0]
-        #         case '%=': value = c.mod(value)[0]
-        #         case '^=': value = c.pow(value)[0]
-        #         case _: return res.failure(InvalidOperationTokenError(node.pos_start,
-        #                                                               node.pos_end,
-        #                                                               f'Expected assignment operator, got {op_tok}'))
-
-        #     # parents[-2].replace(i, value)
-
-        #     c.value = value.value
 
         parents = [c]
         if parent:
@@ -279,13 +252,6 @@ class Interpreter:
         if isinstance(curr_node, ReferenceAssignNode):
             source = res.register(self.visit(curr_node, context))
             return res.success(source)
-
-        # if isinstance(curr_node.root_var, VarAccessNode):
-        #     val = res.register(self.visit(BinOpNode(curr_node.root_var, Token('AT', '@'), curr_node.specifier),
-        #                                   context))
-
-            if res.error: return res
-            return res.success(val)
 
     def visit_VarAssignNode(self, node, context):
         res = RuntimeResult()
@@ -626,7 +592,7 @@ class Interpreter:
             f.close()
         except: return res.failure(ModuleNotFoundError(node.fname.pos_start,
                                                        node.fname.pos_end,
-                                                       f'No module found: {name}'))
+                                                       f'No module found: {name} (dir={os.getcwd()})'))
         ast = Parser(Lexer().tokenize(code).value).parse()
         if ast.error: return res.failure(ModuleImportError(node.fname.pos_start,
                                                            node.fname.pos_end,

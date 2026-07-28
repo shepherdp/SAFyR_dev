@@ -242,8 +242,12 @@ class Lexer:
         if self.token == '=' and c in "'\"":
             s_, delta = 'fin', 0
 
+        # skip over current character
+        if s_ == 'new' and self.state == 'new':
+            pass
+
         # fail state
-        if s_ == 'xxx':
+        elif s_ == 'xxx':
             self.end_pos = Position(self.pos,
                                     self.linenum,
                                     self.colnum+1,
@@ -253,10 +257,6 @@ class Lexer:
             return res.failure(IllegalTokenFormatError(self.start_pos,
                                                        self.end_pos,
                                                        f'Encountered character [{c}] in state [{self.state}]'))
-
-        # skip over current character
-        elif s_ == 'new' and self.state == 'new':
-            pass
 
         # single line comment
         elif s_ == 'cmt':

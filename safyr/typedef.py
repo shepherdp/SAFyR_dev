@@ -6,7 +6,15 @@ from random import random
 
 
 class Position:
+    """Class for tracking positions of tokens in source files.
     
+    Parameters:
+    idx  :
+    ln   :
+    col  :
+    fn   :
+    ftxt :
+    """
     def __init__(self, idx, ln, col, fn, ftxt):
         self.idx = idx
         self.ln = ln
@@ -27,6 +35,15 @@ class Position:
 
 
 class Token:
+    """Class representing individual input tokens.
+    
+    Parameters
+    ----------
+    _type      :
+    _value     :
+    _pos_start :
+    _pos_end   :
+    """
     
     def __init__(self, type_, value=None, pos_start=None, pos_end=None):
         self.type = type_
@@ -41,13 +58,19 @@ class Token:
             self.pos_end = pos_end
 
     def matches(self, other):
+        """
+        """
         return self == other
 
     def __repr__(self):
+        """
+        """
         if self.value is not None: return f'{self.type}:{self.value}'
         return f'{self.type}'
 
     def __eq__(self, other):
+        """
+        """
         return self.value == other.value and self.type == other.type
 
 class SymbolTable:
@@ -60,7 +83,6 @@ class SymbolTable:
     def get(self, name):
         value = self.symbols.get(name, None)
         if value == None and self.parent:
-            # return self.parent.get(name)
             if name in self.parent.globals:
                 return self.parent.get(name)
         return value
@@ -83,7 +105,23 @@ class Context:
 
 
 class Value:
+    """Base class for all built-in data types.
     
+    Parameters
+    ----------
+    _t
+    _static
+    _const
+
+    Attributes
+    ----------
+    _value
+    _type
+    _static
+    _const
+    _triggers
+    """
+
     def __init__(self, t=None, static=False, constvar=False):
         self.set_pos()
         self.set_context()
@@ -92,6 +130,9 @@ class Value:
         self.static = static
         self.constvar = constvar
         self.triggers = []
+
+    def __repr__(self):
+        return str(self.value)
 
     def replace(self, other):
         self = other
@@ -106,51 +147,52 @@ class Value:
         self.context = context
         return self
 
+    # default implementations for all binary operators
     def add(self, other): return None, self.illegal_op(other)
-
-    def sub(self, other): return None, self.illegal_op(other)
-
-    def mul(self, other): return None, self.illegal_op(other)
-
-    def div(self, other): return None, self.illegal_op(other)
-
-    def mod(self, other): return None, self.illegal_op(other)
-
-    def pow(self, other): return None, self.illegal_op(other)
-
-    def eq(self, other): return None, self.illegal_op(other)
-
-    def ne(self, other): return None, self.illegal_op(other)
-
-    def lt(self, other): return None, self.illegal_op(other)
-
-    def gt(self, other): return None, self.illegal_op(other)
-
-    def le(self, other): return None, self.illegal_op(other)
-
-    def ge(self, other): return None, self.illegal_op(other)
-
-    def logand(self, other): return None, self.illegal_op(other)
-
-    def logor(self, other): return None, self.illegal_op(other)
-
-    def lognand(self, other): return None, self.illegal_op(other)
-
-    def lognor(self, other): return None, self.illegal_op(other)
-
-    def logxor(self, other): return None, self.illegal_op(other)
-
-    def lognot(self): return None, self.illegal_op(self)
 
     def at(self, other): return None, self.illegal_op(other)
 
     def contains(self, other): return None, self.illegal_op(other)
 
+    def div(self, other): return None, self.illegal_op(other)
+
+    def eq(self, other): return None, self.illegal_op(other)
+
+    def ge(self, other): return None, self.illegal_op(other)
+
+    def gt(self, other): return None, self.illegal_op(other)
+
     def inj(self, other): return None, self.illegal_op(other)
+
+    def le(self, other): return None, self.illegal_op(other)
+
+    def logand(self, other): return None, self.illegal_op(other)
+
+    def lognand(self, other): return None, self.illegal_op(other)
+
+    def lognor(self, other): return None, self.illegal_op(other)
+
+    def lognot(self): return None, self.illegal_op(self)
+
+    def logor(self, other): return None, self.illegal_op(other)
+
+    def logxor(self, other): return None, self.illegal_op(other)
+
+    def lt(self, other): return None, self.illegal_op(other)
+
+    def mod(self, other): return None, self.illegal_op(other)
+
+    def mul(self, other): return None, self.illegal_op(other)
+
+    def ne(self, other): return None, self.illegal_op(other)
+
+    def pow(self, other): return None, self.illegal_op(other)
         
     def sliceleft(self, other): return None, self.illegal_op(other)
 
     def sliceright(self, other): return None, self.illegal_op(other)
+
+    def sub(self, other): return None, self.illegal_op(other)
 
     def copy(self):
         copy = Value(self.value)
@@ -165,9 +207,6 @@ class Value:
                                              other.pos_end,
                                              'Illegal operation',
                                              self.context)
-
-    def __repr__(self):
-        return str(self.value)
 
 
 class Number(Value):
@@ -778,8 +817,6 @@ class Struct(Value):
         for p in self.context.symbol_table.symbols:
             if p in self.properties:
                 self.properties[p] = self.context.symbol_table.symbols[p]
-        # for p in self.properties:
-        #     self.context.symbol_table.symbols[p] = self.properties[p]
 
     def copy(self):
         copy = Struct(deepcopy(self.properties), self.context, '')
@@ -789,7 +826,6 @@ class Struct(Value):
         copy.instance_name = self.instance_name
         copy.set_pos(self.pos_start, self.pos_end)
         copy.interfaces = self.interfaces
-        # copy.set_context(self.context)
         return copy
 
 
