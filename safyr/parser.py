@@ -346,10 +346,6 @@ class Parser:
 
 
     def call(self):
-        # currently does not support function calls, e.g., from inside lists
-        # if you have a list full of functions and try to call one of them,
-        # it will not work
-        # the parentheses will be seen as containing an atom
         res = ParseResult()
         atom = res.register(self.atom())
         if res.error: return res
