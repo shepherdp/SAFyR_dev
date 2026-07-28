@@ -5,4 +5,6 @@ __all__ = ['errors',
            'parser',
            'result',
            'shell',
-           'typedef']
+           'typedef',
+           'constants',
+           'datatypes']

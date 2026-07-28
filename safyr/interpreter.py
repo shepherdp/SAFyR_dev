@@ -3,6 +3,7 @@ from .parser import (Parser, StringNode, ReferenceAssignNode,
                     VarAccessNode, NumberNode, BinOpNode,
                     CallNode, DeferNode, ReturnNode)
 from .typedef import *
+from .datatypes import *
 from .errors import *
 
 
@@ -132,8 +133,7 @@ class Interpreter:
             case 'DOT' : result, error = right, None
             case _: pass
 
-        if error: return res.failure(error)
-        else: return res.success(result)
+        return res.failure(error) if error else res.success(result)
 
     def visit_UnaryOpNode(self, node, context):
         res = RuntimeResult()
