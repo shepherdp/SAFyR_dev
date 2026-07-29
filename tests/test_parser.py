@@ -3,7 +3,7 @@ import unittest
 from safyr.interpreter import *
 from safyr.lexer import *
 from safyr.parser import *
-
+from safyr.constants import *
 
 BRK = Token('EOF', None)
 POS = Position(0,0,0,0,0)

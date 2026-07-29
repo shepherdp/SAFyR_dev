@@ -1,10 +1,11 @@
-from .lexer import KWDS, Lexer
+from .lexer import Lexer
 from .parser import (Parser, StringNode, ReferenceAssignNode,
                     VarAccessNode, NumberNode, BinOpNode,
                     CallNode, DeferNode, ReturnNode)
 from .typedef import *
 from .datatypes import *
 from .errors import *
+from .constants import *
 
 
 class Interpreter:

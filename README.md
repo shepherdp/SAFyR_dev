@@ -350,11 +350,11 @@ By default, any `when` trigger will persist, and will fire every time the condit
 
 Basic function syntax:
 
-    . optional FUNCNAME [ optional ARGS ] <~ STATEMENT
+    : optional FUNCNAME [ optional ARGS ] <~ STATEMENT
 
 or
 
-    . optional FUNCNAME [ optional ARGS ] <~ {
+    : optional FUNCNAME [ optional ARGS ] <~ {
         STATEMENTS
     }
 

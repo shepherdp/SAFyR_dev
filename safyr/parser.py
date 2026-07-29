@@ -2,6 +2,7 @@ from .errors import *
 from .node import *
 from .result import ParseResult
 from .typedef import Token
+from .constants import *
 
 
 class Parser:
