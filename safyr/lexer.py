@@ -5,23 +5,36 @@ from .constants import *
 
 
 class Lexer:
+    """Lexer for the SAFyR language.
+
+    Transforms raw text into Token objects for the Parser.
+    Syntax specifications provided in safyr/syntax.txt
+
+    :: ATTRS ::
+
+    """
     def __init__(self):
 
-        self.state = 'new'
-        self.pos = 0
-        self.token = ''
-        self.tokens = []
-        self.input = ''
-        self.t = {}
-        self.name = ''
-
-        self.linenum = 0
-        self.colnum = 0
+        self.name      = ''
+        self.input     = ''
+        self.currline  = ''
         self.linestart = 0
-        self.currline = ''
-        self.start_pos = Position(0, 0, 0, self.name, self.input)
-        self.end_pos = self.start_pos.copy()
+        self.linenum   = 0
+        self.colnum    = 0
 
+        self.state     = 'new'
+        self.pos       = 0
+        self.token     = ''
+        self.tokens    = []
+
+        self.linenum   = 0
+        self.colnum    = 0
+        self.linestart = 0
+        self.currline  = ''
+        self.start_pos = Position(0, 0, 0, self.name, self.input)
+        self.end_pos   = self.start_pos.copy()
+
+        self.t         = {}
         self.load_rules()
 
     def load_rules(self):
@@ -145,7 +158,8 @@ class Lexer:
 
         # attach a copy of the current line of the program for use in error messages
         try:
-            line = self.input[self.linestart:self.linestart + self.input[self.linestart:].index('\n')]
+            line = self.input[self.linestart:
+                              self.linestart + self.input[self.linestart:].index('\n')]
             self.currline = line
         except ValueError:
             self.currline = self.input[self.linestart:]
@@ -190,9 +204,11 @@ class Lexer:
                                     self.name,
                                     self.currline)
 
-            return res.failure(IllegalTokenFormatError(self.start_pos,
-                                                       self.end_pos,
-                                                       f'Encountered character [{c}] in state [{self.state}]'))
+            return res.failure(
+                IllegalTokenFormatError(self.start_pos,
+                                        self.end_pos,
+                                        f'Encountered character [{c}] in state [{self.state}]')
+            )
 
         # single line comment
         elif s_ == 'cmt':
@@ -240,9 +256,11 @@ class Lexer:
         if c == '\n':
 
             if self.state == 'st1':
-                return res.failure(UnmatchedQuoteError(self.start_pos,
-                                                       self.end_pos,
-                                                       'Unmatched quotation mark'))
+                return res.failure(
+                    UnmatchedQuoteError(self.start_pos,
+                                        self.end_pos,
+                                        'Unmatched quotation mark')
+                )
 
             # modify current position and other data to prepare for next token
             self.end_pos = Position(self.pos,
@@ -282,28 +300,50 @@ class Lexer:
         # numerical token
         if s[0] in DGT + '.':
             if '.' in s:
-                if s == '.': return res.success(Token('DOT', s,
-                                                      pos_start=self.start_pos,
-                                                      pos_end=self.end_pos))
-                if s == '..': return res.success(Token('OPS', s,
-                                                       pos_start=self.start_pos,
-                                                       pos_end=self.end_pos))
+                if s == '.':
+                    return res.success(
+                        Token('DOT',
+                              s,
+                              pos_start=self.start_pos,
+                              pos_end=self.end_pos)
+                    )
+                if s == '..':
+                    return res.success(
+                        Token('OPS',
+                              s,
+                              pos_start=self.start_pos,
+                              pos_end=self.end_pos)
+                    )
 
-                return res.success(Token('FLT', float(s),
-                                         pos_start=self.start_pos,
-                                         pos_end=self.end_pos))
-            else: return res.success(Token('INT', int(s),
-                                           pos_start=self.start_pos,
-                                           pos_end=self.end_pos))
+                return res.success(
+                    Token('FLT',
+                          float(s),
+                          pos_start=self.start_pos,
+                          pos_end=self.end_pos)
+                )
+            else:
+                return res.success(
+                    Token('INT',
+                          int(s),
+                          pos_start=self.start_pos,
+                          pos_end=self.end_pos)
+                )
 
         # symbol token
         if s[0] in UPR + LWR:
-            if s in KWDS: return res.success(Token('KWD', s,
-                                                   pos_start=self.start_pos,
-                                                   pos_end=self.end_pos))
-            return res.success(Token('SYM', s,
-                                     pos_start=self.start_pos,
-                                     pos_end=self.end_pos))
+            if s in KWDS:
+                return res.success(
+                    Token('KWD',
+                          s,
+                          pos_start=self.start_pos,
+                          pos_end=self.end_pos)
+                )
+            return res.success(
+                Token('SYM',
+                      s,
+                      pos_start=self.start_pos,
+                      pos_end=self.end_pos)
+            )
 
         # string token
         if s[0] == '"':
