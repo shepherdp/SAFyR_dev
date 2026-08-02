@@ -21,6 +21,14 @@ BIGRAPHS = ['+=', '-=', '*=', '/=', '^=', '%=',
             '<~', '~>', '~&', '~|', '><', '!?',
             '</', '/>', '..', ':=', '::']
 
+ID_ASG = 'ASG'
+ID_FLT = 'FLT'
+ID_INT = 'INT'
+ID_KWD = 'KWD'
+ID_OPS = 'OPS'
+ID_STR = 'STR'
+ID_SYM = 'SYM'
+
 # all named operations
 OPNAMES = {'+': 'PLS',
            '-': 'MNS',

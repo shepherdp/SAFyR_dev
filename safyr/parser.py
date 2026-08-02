@@ -2,7 +2,7 @@ from .errors import *
 from .node import *
 from .result import ParseResult
 from .typedef import Token
-from .constants import *
+from . import constants as c
 
 
 class Parser:
@@ -120,11 +120,11 @@ class Parser:
         pos_start = self.current_tok.pos_start.copy()
 
         # use keyword handler
-        if self.current_tok.matches(Token('KWD', 'use')):
+        if self.current_tok.matches(Token(c.ID_KWD, 'use')):
             self.update(res)
 
             # use must be followed by an identifier
-            if self.current_tok.type == 'SYM':
+            if self.current_tok.type == c.ID_SYM:
                 fname = self.current_tok
                 self.update(res)
             else: return res.failure(InvalidSyntaxError(pos_start,
@@ -132,8 +132,7 @@ class Parser:
                                                         f'Expected file identifier'))
 
             # use must be followed by newline
-            if self.current_tok.matches(Token('BREAK', None)):
-                self.update(res)
+            if self.current_tok.matches(Token('BREAK', None)): self.update(res)
             elif self.current_tok.matches(Token('EOF', None)): pass
             else: return res.failure(InvalidSyntaxError(pos_start,
                                                         self.current_tok.pos_end,
@@ -142,20 +141,20 @@ class Parser:
             return res.success(UseNode(fname))
 
         # return keyword handler
-        if self.current_tok.matches(Token('KWD', 'return')):
+        if self.current_tok.matches(Token(c.ID_KWD, 'return')):
             self.update(res)
-            expr, e = res.try_register(self.expr())
+            expr, _ = res.try_register(self.expr())
             if not expr: self.reverse(res.to_reverse_count)
             return res.success(ReturnNode(expr,
                                           pos_start,
                                           self.current_tok.pos_start.copy()))
 
         # del keyword handler
-        if self.current_tok.matches(Token('KWD', 'del')):
+        if self.current_tok.matches(Token(c.ID_KWD, 'del')):
             self.update(res)
 
             # del must be followed by an identifier
-            if not self.current_tok.type == 'SYM':
+            if not self.current_tok.type == c.ID_SYM:
                 return res.failure(InvalidSyntaxError(pos_start,
                                                       self.current_tok.pos_end,
                                                       f'Expected identifier'))
@@ -166,19 +165,19 @@ class Parser:
             return res.success(DeleteNode(to_delete))
 
         # continue keyword handler
-        if self.current_tok.matches(Token('KWD', 'continue')):
+        if self.current_tok.matches(Token(c.ID_KWD, 'continue')):
             self.update(res)
             return res.success(ContinueNode(pos_start,
                                             self.current_tok.pos_start.copy()))
 
         # once keyword handler
-        if self.current_tok.matches(Token('KWD', 'once')):
+        if self.current_tok.matches(Token(c.ID_KWD, 'once')):
             self.update(res)
             return res.success(OnceNode(pos_start,
                                             self.current_tok.pos_start.copy()))
 
         # break keyword handler
-        if self.current_tok.matches(Token('KWD', 'break')):
+        if self.current_tok.matches(Token(c.ID_KWD, 'break')):
             self.update(res)
             return res.success(BreakNode(pos_start,
                                          self.current_tok.pos_start.copy()))
@@ -198,17 +197,17 @@ class Parser:
         globalvar = False
 
         # check for constant declaration
-        if self.current_tok.matches(Token('KWD', 'const')):
+        if self.current_tok.matches(Token(c.ID_KWD, 'const')):
             constvar = True
             self.update(res)
 
         # check for global declaration
-        if self.current_tok.matches(Token('KWD', 'global')):
+        if self.current_tok.matches(Token(c.ID_KWD, 'global')):
             globalvar = True
             self.update(res)
 
         # warning about unnecessary var keyword
-        if self.current_tok.matches(Token('KWD', 'var')):
+        if self.current_tok.matches(Token(c.ID_KWD, 'var')):
             if not self.static:
                 warn_msg = f'kwd <var> has no effect'
             statictype = 'var'
@@ -220,13 +219,13 @@ class Parser:
             self.update(res)
 
         # try to read a function definition
-        if self.current_tok.matches(Token('OPS', ':')):
+        if self.current_tok.matches(Token(c.ID_OPS, ':')):
             f = res.register(self.func_def())
             if res.error: return res
             return res.success(f)
 
         # try to read a struct definition
-        if self.current_tok.matches(Token('OPS', '::')):
+        if self.current_tok.matches(Token(c.ID_OPS, '::')):
             s = res.register(self.struct_def())
             if res.error: return res
             return res.success(s)
@@ -238,7 +237,7 @@ class Parser:
             return res.success(i)
 
         # regular named variable assignment
-        if self.current_tok.type == 'SYM' and self.peek().type == 'ASG':
+        if self.current_tok.type == c.ID_SYM and self.peek().type == c.ID_ASG:
             var_name = self.current_tok
             self.update(res)
 
@@ -257,15 +256,20 @@ class Parser:
                                              statictype=statictype))
 
         # try to read a comparison expression
-        node = res.register(self.bin_op(self.comp_expr, ('AND', 'OR', 'NAND', 'NOR',
-                                                         'XOR', 'INJ', 'IN')))
+        node = res.register(self.bin_op(self.comp_expr, ('AND',
+                                                         'INJ',
+                                                         'IN',
+                                                         'NAND',
+                                                         'NOR',
+                                                         'OR',
+                                                         'XOR')))
         if res.error: return res
 
         if warn_msg: self.warnings.append(warn_msg)
 
         # if successful, check if the expression was on the left side of an
         # assignment or augassignment operator
-        if self.current_tok.type == 'ASG':
+        if self.current_tok.type == c.ID_ASG:
 
             op_tok = self.current_tok
             self.update(res)
@@ -362,17 +366,17 @@ class Parser:
         tok = self.current_tok
 
         # register number
-        if tok.type in ('INT', 'FLT'):
+        if tok.type in (c.ID_INT, c.ID_FLT):
             self.update(res)
             return res.success(NumberNode(tok))
 
         # register string
-        elif 'STR' in tok.type:
+        elif c.ID_STR in tok.type:
             self.update(res)
             return res.success(StringNode(tok))
 
         # register identifier
-        elif tok.type == 'SYM':
+        elif tok.type == c.ID_SYM:
             self.update(res)
             return res.success(VarAccessNode(tok))
 
@@ -403,55 +407,55 @@ class Parser:
             return res.success(map_expr)
 
         # register conditional chain
-        elif tok.matches(Token('KWD', '?')) or tok.matches(Token('KWD', 'if')):
+        elif tok.matches(Token(c.ID_KWD, '?')) or tok.matches(Token(c.ID_KWD, 'if')):
             if_expr = res.register(self.if_expr())
             if res.error: return res
             return res.success(if_expr)
 
         # register for loop
-        elif tok.matches(Token('KWD', 'for')):
+        elif tok.matches(Token(c.ID_KWD, 'for')):
             for_expr = res.register(self.for_expr())
             if res.error: return res
             return res.success(for_expr)
 
         # register iterator loop
-        elif tok.matches(Token('KWD', 'foreach')):
+        elif tok.matches(Token(c.ID_KWD, 'foreach')):
             foreach_expr = res.register(self.foreach_expr())
             if res.error: return res
             return res.success(foreach_expr)
 
         # register while loop
-        elif tok.matches(Token('KWD', 'while')):
+        elif tok.matches(Token(c.ID_KWD, 'while')):
             while_expr = res.register(self.while_expr())
             if res.error: return res
             return res.success(while_expr)
 
         # register when trigger
-        elif tok.matches(Token('KWD', 'when')):
+        elif tok.matches(Token(c.ID_KWD, 'when')):
             when_expr = res.register(self.when_expr())
             if res.error: return res
             return res.success(when_expr)
 
         # register defer block
-        elif tok.matches(Token('KWD', 'defer')):
+        elif tok.matches(Token(c.ID_KWD, 'defer')):
             defer_expr = res.register(self.defer_expr())
             if res.error: return res
             return res.success(defer_expr)
 
         # register try/catch block
-        elif tok.matches(Token('KWD', 'try')):
+        elif tok.matches(Token(c.ID_KWD, 'try')):
             try_expr = res.register(self.try_expr())
             if res.error: return res
             return res.success(try_expr)
 
         # register function definition
-        elif tok.matches(Token('OPS', ':')):
+        elif tok.matches(Token(c.ID_OPS, ':')):
             func_def = res.register(self.func_def())
             if res.error: return res
             return res.success(func_def)
 
         # register struct definition
-        elif tok.matches(Token('OPS', '::')):
+        elif tok.matches(Token(c.ID_OPS, '::')):
             struct_def = res.register(self.struct_def())
             if res.error: return res
             return res.success(struct_def)
@@ -485,7 +489,7 @@ class Parser:
                                                           self.current_tok.pos_end,
                                                           "Expected expression or '}'"))
 
-                if not self.current_tok.matches(Token('OPS', ':')):
+                if not self.current_tok.matches(Token(c.ID_OPS, ':')):
                     return res.failure(InvalidSyntaxError(self.current_tok.pos_start,
                                                           self.current_tok.pos_end,
                                                           f"Expected ':'"))
@@ -584,7 +588,7 @@ class Parser:
                                                           'Expected }'))
 
             else:
-                if not self.current_tok.matches(Token('OPS', ':')):
+                if not self.current_tok.matches(Token(c.ID_OPS, ':')):
                     return res.failure(InvalidSyntaxError(self.current_tok.pos_start,
                                                           self.current_tok.pos_end,
                                                           f"Expected ':'"))
@@ -656,7 +660,7 @@ class Parser:
                                                         "Expected '}'"))
 
         else:
-            if not self.current_tok.matches(Token('OPS', ':')):
+            if not self.current_tok.matches(Token(c.ID_OPS, ':')):
                 return res.failure(UnopenedScopeError(self.current_tok.pos_start,
                                                       self.current_tok.pos_end,
                                                       f"Expected ':'"))
@@ -676,13 +680,13 @@ class Parser:
     def for_expr(self):
         res = ParseResult()
 
-        if not self.current_tok.matches(Token('KWD', 'for')):
+        if not self.current_tok.matches(Token(c.ID_KWD, 'for')):
             return res.failure(InvalidSyntaxError(self.current_tok.pos_start,
                                                   self.current_tok.pos_end,
                                                   f"Expected 'for'"))
         self.update(res)
 
-        if self.current_tok.type != 'SYM':
+        if self.current_tok.type != c.ID_SYM:
             return res.failure(InvalidSyntaxError(self.current_tok.pos_start,
                                                   self.current_tok.pos_end,
                                                   f"Expected identifier"))
@@ -698,7 +702,7 @@ class Parser:
         start_value = res.register(self.expr())
         if res.error: return res
 
-        if not self.current_tok.matches(Token('OPS', '..')):
+        if not self.current_tok.matches(Token(c.ID_OPS, '..')):
             return res.failure(InvalidSyntaxError(self.current_tok.pos_start,
                                                   self.current_tok.pos_end,
                                                   f"Expected '..'"))
@@ -707,7 +711,7 @@ class Parser:
         end_value = res.register(self.expr())
         if res.error: return res
 
-        if self.current_tok.matches(Token('OPS', '..')):
+        if self.current_tok.matches(Token(c.ID_OPS, '..')):
             self.update(res)
             step_value = res.register(self.expr())
             if res.error: return res
@@ -737,7 +741,7 @@ class Parser:
                                        body,
                                        True))
 
-        if not self.current_tok.matches(Token('OPS', ':')):
+        if not self.current_tok.matches(Token(c.ID_OPS, ':')):
             return res.failure(UnopenedScopeError(self.current_tok.pos_start,
                                                   self.current_tok.pos_end,
                                                   f"Expected ':'"))
@@ -756,20 +760,20 @@ class Parser:
     def foreach_expr(self):
         res = ParseResult()
 
-        if not self.current_tok.matches(Token('KWD', 'foreach')):
+        if not self.current_tok.matches(Token(c.ID_KWD, 'foreach')):
             return res.failure(InvalidSyntaxError(self.current_tok.pos_start,
                                                   self.current_tok.pos_end,
                                                   f"Expected 'foreach'"))
         self.update(res)
 
-        if self.current_tok.type != 'SYM':
+        if self.current_tok.type != c.ID_SYM:
             return res.failure(InvalidSyntaxError(self.current_tok.pos_start,
                                                   self.current_tok.pos_end,
                                                   f"Expected identifier"))
         var_name = self.current_tok
         self.update(res)
 
-        if not self.current_tok.matches(Token('KWD', 'in')):
+        if not self.current_tok.matches(Token(c.ID_KWD, 'in')):
             return res.failure(InvalidSyntaxError(self.current_tok.pos_start,
                                                   self.current_tok.pos_end,
                                                   f"Expected 'in'"))
@@ -796,7 +800,7 @@ class Parser:
 
             return res.success(ForEachNode(var_name, container, body, True))
 
-        if not self.current_tok.matches(Token('OPS', ':')):
+        if not self.current_tok.matches(Token(c.ID_OPS, ':')):
             return res.failure(UnopenedScopeError(self.current_tok.pos_start,
                                                   self.current_tok.pos_end,
                                                   "Expected ':' or '{'"))
@@ -813,7 +817,7 @@ class Parser:
     def while_expr(self):
         res = ParseResult()
 
-        if not self.current_tok.matches(Token('KWD', 'while')):
+        if not self.current_tok.matches(Token(c.ID_KWD, 'while')):
             return res.failure(InvalidSyntaxError(self.current_tok.pos_start,
                                                   self.current_tok.pos_end,
                                                   f"Expected 'while'"))
@@ -843,7 +847,7 @@ class Parser:
                                          body,
                                          True))
 
-        if not self.current_tok.matches(Token('OPS', ':')):
+        if not self.current_tok.matches(Token(c.ID_OPS, ':')):
             return res.failure(UnopenedScopeError(self.current_tok.pos_start,
                                                   self.current_tok.pos_end,
                                                   "Expected ':' or '{'"))
@@ -858,7 +862,7 @@ class Parser:
     def when_expr(self):
         res = ParseResult()
 
-        if not self.current_tok.matches(Token('KWD', 'when')):
+        if not self.current_tok.matches(Token(c.ID_KWD, 'when')):
             return res.failure(InvalidSyntaxError(self.current_tok.pos_start,
                                                   self.current_tok.pos_end,
                                                   f"Expected 'when'"))
@@ -888,7 +892,7 @@ class Parser:
                                         body,
                                         True))
 
-        if not self.current_tok.matches(Token('OPS', ':')):
+        if not self.current_tok.matches(Token(c.ID_OPS, ':')):
             return res.failure(UnopenedScopeError(self.current_tok.pos_start,
                                                   self.current_tok.pos_end,
                                                   "Expected ':' or '{'"))
@@ -903,7 +907,7 @@ class Parser:
     def defer_expr(self):
         res = ParseResult()
 
-        if not self.current_tok.matches(Token('KWD', 'defer')):
+        if not self.current_tok.matches(Token(c.ID_KWD, 'defer')):
             return res.failure(InvalidSyntaxError(self.current_tok.pos_start,
                                                   self.current_tok.pos_end,
                                                   f"Expected 'defer'"))
@@ -930,7 +934,7 @@ class Parser:
             return res.success(DeferNode(body,
                                          True))
 
-        if not self.current_tok.matches(Token('OPS', ':')):
+        if not self.current_tok.matches(Token(c.ID_OPS, ':')):
             return res.failure(UnopenedScopeError(self.current_tok.pos_start,
                                                   self.current_tok.pos_end,
                                                   "Expected ':' or '{'"))
@@ -944,7 +948,7 @@ class Parser:
     def try_expr(self):
         res = ParseResult()
 
-        if not self.current_tok.matches(Token('KWD', 'try')):
+        if not self.current_tok.matches(Token(c.ID_KWD, 'try')):
             return res.failure(InvalidSyntaxError(self.current_tok.pos_start,
                                                   self.current_tok.pos_end,
                                                   f"Expected 'try'"))
@@ -968,7 +972,7 @@ class Parser:
                                                       "Expected '}'"))
             self.update(res)
 
-        elif self.current_tok.matches(Token('OPS', ':')):
+        elif self.current_tok.matches(Token(c.ID_OPS, ':')):
             self.update(res)
             try_node = res.register(self.statement())
             if res.error: return res
@@ -979,7 +983,7 @@ class Parser:
         while self.current_tok.type == 'BREAK':
             self.update(res)
 
-        if not self.current_tok.matches(Token('KWD', 'catch')):
+        if not self.current_tok.matches(Token(c.ID_KWD, 'catch')):
             return res.failure(InvalidSyntaxError(self.current_tok.pos_start,
                                                   self.current_tok.pos_end,
                                                   f"Expected 'catch'"))
@@ -1002,7 +1006,7 @@ class Parser:
                                                       "Expected '}'"))
             self.update(res)
 
-        elif self.current_tok.matches(Token('OPS', ':')):
+        elif self.current_tok.matches(Token(c.ID_OPS, ':')):
             self.update(res)
             catch_node = res.register(self.statement())
             if res.error: return res
@@ -1016,13 +1020,13 @@ class Parser:
     def func_def(self):
         res = ParseResult()
 
-        if not self.current_tok.matches(Token('OPS', ':')):
+        if not self.current_tok.matches(Token(c.ID_OPS, ':')):
             return res.failure(InvalidSyntaxError(self.current_tok.pos_start,
                                                   self.current_tok.pos_end,
                                                   f"Expected ':'"))
         self.update(res)
 
-        if self.current_tok.type == 'SYM':
+        if self.current_tok.type == c.ID_SYM:
             var_name_tok = self.current_tok
             self.update(res)
             if self.current_tok.type != 'LBR':
@@ -1038,8 +1042,8 @@ class Parser:
         self.update(res)
 
         arg_name_toks = []
-        if self.current_tok.type == 'SYM':
-            while self.current_tok.type == 'SYM':
+        if self.current_tok.type == c.ID_SYM:
+            while self.current_tok.type == c.ID_SYM:
                 arg_name_toks.append(self.current_tok)
                 self.update(res)
 
@@ -1085,7 +1089,7 @@ class Parser:
                                                           False))
 
             # one-line functions auto-return, so ignore the return keyword if it was included
-            if self.current_tok.matches(Token('KWD', 'return')):
+            if self.current_tok.matches(Token(c.ID_KWD, 'return')):
                 self.update(res)
 
             body = res.register(self.expr())
@@ -1110,7 +1114,7 @@ class Parser:
                                                   f"Expected '.'"))
         self.update(res)
 
-        if self.current_tok.type != 'SYM':
+        if self.current_tok.type != c.ID_SYM:
             return res.failure(InvalidSyntaxError(self.current_tok.pos_start,
                                                   self.current_tok.pos_end,
                                                   f"Expected identifier"))
@@ -1132,13 +1136,13 @@ class Parser:
     def struct_def(self):
         res = ParseResult()
 
-        if not self.current_tok.matches(Token('OPS', '::')):
+        if not self.current_tok.matches(Token(c.ID_OPS, '::')):
             return res.failure(InvalidSyntaxError(self.current_tok.pos_start,
                                                   self.current_tok.pos_end,
                                                   f"Expected '::'"))
         self.update(res)
 
-        if self.current_tok.type == 'SYM':
+        if self.current_tok.type == c.ID_SYM:
             var_name_tok = self.current_tok
             self.update(res)
 
@@ -1155,7 +1159,7 @@ class Parser:
         self.update(res)
 
         arg_name_toks = []
-        while self.current_tok.type == 'SYM':
+        while self.current_tok.type == c.ID_SYM:
             arg_name_toks.append(self.current_tok)
             self.update(res)
 
@@ -1203,6 +1207,7 @@ class Parser:
     # continues as long as it keeps seeing a token that it expects after
     # reading from func_a
     def bin_op(self, func_a, ops, func_b=None):
+
         if func_b is None:
             func_b = func_a
 
@@ -1210,7 +1215,8 @@ class Parser:
         left = res.register(func_a())
         if res.error: return res
 
-        while self.current_tok.type in ops or (self.current_tok.type, self.current_tok.value) in ops:
+        while any([op in ops for op in [self.current_tok.type,
+                                        (self.current_tok.type, self.current_tok.value)]]):
             op_tok = self.current_tok
             self.update(res)
             right = res.register(func_b())
