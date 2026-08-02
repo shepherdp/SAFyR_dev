@@ -1,3 +1,13 @@
+from functools import wraps
+
+def with_reset(func):
+    @wraps(func)
+    def wrapper(self, *args, **kwargs):
+        self.reset()
+        return func(self, *args, **kwargs)
+    return wrapper
+
+
 class LexResult:
     def __init__(self):
         self.error = None
@@ -56,6 +66,7 @@ class ParseResult:
 
 
 class RuntimeResult:
+
     def __init__(self):
         self.reset()
 
@@ -73,36 +84,34 @@ class RuntimeResult:
         self.loop_should_break = res.loop_should_break
         return res.value
 
+    @with_reset
     def success(self, value):
-        self.reset()
         self.value = value
         return self
 
+    @with_reset
     def success_return(self, value):
-        self.reset()
         self.func_return_value = value
         return self
 
+    @with_reset
     def success_continue(self):
-        self.reset()
         self.loop_should_continue = True
         return self
 
+    @with_reset
     def success_break(self):
-        self.reset()
         self.loop_should_break = True
         return self
 
+    @with_reset
     def failure(self, error):
-        self.reset()
         self.error = error
         return self
 
     def should_return(self):
         # Note: this will allow you to continue and break outside the current function
-        return (
-                self.error or
+        return (self.error or
                 self.func_return_value or
                 self.loop_should_continue or
-                self.loop_should_break
-        )
+                self.loop_should_break)
