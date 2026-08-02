@@ -11,27 +11,38 @@ from .constants import *
 class Interpreter:
     def visit(self, node, context):
         method_name = f'visit_{type(node).__name__}'
-        method = getattr(self, method_name, self.no_visit_method)
+        method = getattr(self, method_name, Interpreter.no_visit_method)
         val = method(node, context)
         return val
 
-    def no_visit_method(self, node, context):
-        return RuntimeResult().failure(RuntimeError(node.pos_start,
-                                                    node.pos_end,
-                                                    f'No visit_{type(node).__name__} method defined',
-                                                    context))
+    @staticmethod
+    def no_visit_method(node, context):
+        return RuntimeResult().failure(
+            RuntimeError(node.pos_start,
+                         node.pos_end,
+                         f'No visit_{type(node).__name__} method defined',
+                         context)
+        )
 
-    def visit_NumberNode(self, node, context):
-        return RuntimeResult().success(Number(node.tok.value,
-                                              t=node.tok.type
-                                              ).set_context(context).set_pos(node.pos_start, node.pos_end))
+    @staticmethod
+    def visit_NumberNode(node, context):
+        return RuntimeResult().success(
+            Number(node.tok.value,
+                   t=node.tok.type).set_context(context).set_pos(node.pos_start,
+                                                                 node.pos_end)
+        )
 
-    def visit_StringNode(self, node, context):
+    @staticmethod
+    def visit_StringNode(node, context):
         if node.tok.type == 'FSTR':
-            return RuntimeResult().success(FormatString(node.tok.value,
-                                                  ).set_context(context).set_pos(node.pos_start, node.pos_end))
-        return RuntimeResult().success(String(node.tok.value,
-                                              ).set_context(context).set_pos(node.pos_start, node.pos_end))
+            return RuntimeResult().success(
+                FormatString(node.tok.value,).set_context(context).set_pos(node.pos_start,
+                                                                           node.pos_end)
+            )
+        return RuntimeResult().success(
+            String(node.tok.value,).set_context(context).set_pos(node.pos_start,
+                                                                 node.pos_end)
+        )
 
     # CapsuleNode object shuttle results around between areas of the program
     # acts just like a ListNode, but i needed those for actual lists in the program
@@ -53,6 +64,7 @@ class Interpreter:
             ret = res.register(self.visit(el, context))
             if res.should_return(): return res
             elements.append(ret)
+
         if len(elements) == 1:
             if isinstance(elements[0], Struct):
                 return RuntimeResult().success(elements[0].set_pos(node.pos_start, node.pos_end))
@@ -68,8 +80,10 @@ class Interpreter:
             ret = res.register(self.visit(el, context))
             elements.append(ret)
             if res.should_return(): return res
-        return RuntimeResult().success(List(elements).set_context(context
-                                                                  ).set_pos(node.pos_start, node.pos_end))
+
+        return RuntimeResult().success(
+            List(elements).set_context(context).set_pos(node.pos_start, node.pos_end)
+        )
 
     def visit_MapNode(self, node, context):
         res = RuntimeResult()
@@ -81,8 +95,9 @@ class Interpreter:
 
             if res.should_return(): return res
 
-        return RuntimeResult().success(Map(elements).set_context(context
-                                                                 ).set_pos(node.pos_start, node.pos_end))
+        return RuntimeResult().success(
+            Map(elements).set_context(context).set_pos(node.pos_start, node.pos_end)
+        )
 
     def visit_BinOpNode(self, node, context):
         res = RuntimeResult()
@@ -95,9 +110,11 @@ class Interpreter:
         if res.should_return(): return res
         if isinstance(left, Struct) and node.op_tok.type == 'DOT':
             if not isinstance(node.right_node, VarAccessNode):
-                return res.failure(VariableAccessError(node.pos_start,
-                                                       node.pos_end,
-                                                       f"DOT operator must accept identifier as input"))
+                return res.failure(
+                    VariableAccessError(node.pos_start,
+                                        node.pos_end,
+                                        f"DOT operator must accept identifier as input")
+                )
 
             # make sure to access the right things if working on a dot operator
             right = res.register(self.visit(node.right_node, left.context))
@@ -187,19 +204,25 @@ class Interpreter:
                 # and prop3 until we know what sort of thing myvar.prop1 is
                 if isinstance(curr_node.right_node, VarAccessNode):
                     val = String(curr_node.right_node.var_name_tok.value)
+
                 elif isinstance(curr_node.right_node, NumberNode):
                     val = self.visit(curr_node.right_node, context).value
+
                 elif isinstance(curr_node.right_node, BinOpNode):
                     val = res.register(self.visit(curr_node.right_node, context)).value
                     if res.error: return res
+
                 elif isinstance(curr_node.right_node, StringNode):
                     val = self.visit(curr_node.right_node, context).value
+
                 childidxs = [val] + childidxs
 
                 if curr_node.op_tok.type in ('LSLC', 'RSLC'):
-                    return res.failure(InvalidSyntaxError(curr_node.op_tok.pos_start,
-                                                          curr_node.op_tok.pos_end,
-                                                          'Slices not allowed on left of expression.'))
+                    return res.failure(
+                        InvalidSyntaxError(curr_node.op_tok.pos_start,
+                                           curr_node.op_tok.pos_end,
+                                           'Slices not allowed on left of expression.')
+                    )
 
                 if isinstance(curr_node.left_node, VarAccessNode):
                     parent = context.symbol_table.symbols[curr_node.left_node.var_name_tok.value]
@@ -230,9 +253,12 @@ class Interpreter:
                 case '/=': value = c.div(value)[0]
                 case '%=': value = c.mod(value)[0]
                 case '^=': value = c.pow(value)[0]
-                case _: return res.failure(InvalidOperationTokenError(node.pos_start,
-                                                                      node.pos_end,
-                                                                      f'Expected assignment operator, got {op_tok}'))
+                case _:
+                    return res.failure(
+                        InvalidOperationTokenError(node.pos_start,
+                                                   node.pos_end,
+                                                   f'Expected assignment operator, got {op_tok}')
+                    )
 
             if parent.type == 'MAP':
                 parent.elements[childidxs[-1]] = value
@@ -260,9 +286,11 @@ class Interpreter:
         op_tok = node.op_tok.value
 
         if var_name in KWDS + ['T', 'F']:
-            return res.failure(BuiltinViolationError(node.pos_start,
-                                                     node.pos_end,
-                                                     f'Cannot overwrite keyword {var_name}.'))
+            return res.failure(
+                BuiltinViolationError(node.pos_start,
+                                      node.pos_end,
+                                      f'Cannot overwrite keyword {var_name}.')
+            )
 
         # value is the new value for the variable
         value = res.register(self.visit(node.value_node, context))
@@ -286,12 +314,18 @@ class Interpreter:
                         elif node.statictype == 'flt':
                             value.value = float(value.value)
                             value.type = 'FLT'
-                        else: return res.failure(StaticViolationError(node.pos_start,
-                                                                      node.pos_end,
-                                                                      f'Cannot convert {value.value} to {node.statictype}'))
-                    else: return res.failure(StaticViolationError(node.pos_start,
-                                                                  node.pos_end,
-                                                                  f'Cannot convert {value.value} to {node.statictype}'))
+                        else:
+                            return res.failure(
+                                StaticViolationError(node.pos_start,
+                                                     node.pos_end,
+                                                     f'Cannot convert {value.value} to {node.statictype}')
+                            )
+                    else:
+                        return res.failure(
+                            StaticViolationError(node.pos_start,
+                                                 node.pos_end,
+                                                 f'Cannot convert {value.value} to {node.statictype}')
+                        )
                 value.static = True
 
             if static_mode:
@@ -321,21 +355,28 @@ class Interpreter:
 
                 context.symbol_table.set(var_name, value)
 
-            else: return res.failure(VariableAccessError(node.pos_start,
-                                                         node.pos_end,
-                                                         f'Symbol {var_name} doesn\'t exist'))
+            else:
+                return res.failure(
+                    VariableAccessError(node.pos_start,
+                                        node.pos_end,
+                                        f'Symbol {var_name} doesn\'t exist')
+                )
             return res.success(value)
 
         # variable already exists
         else:
             if og_val.constvar:
-                return res.failure(ConstantViolationError(node.pos_start,
-                                                          node.pos_end,
-                                                          f'Cannot change value of constant variable {var_name}'))
+                return res.failure(
+                    ConstantViolationError(node.pos_start,
+                                           node.pos_end,
+                                           f'Cannot change value of constant variable {var_name}')
+                )
             if node.statictype != 'default' or node.constvar or node.globalvar:
-                return res.failure(InvalidSpecifierError(node.pos_start,
-                                                         node.pos_end,
-                                                         f'Specifiers not allowed on existing variable {var_name}.'))
+                return res.failure(
+                    InvalidSpecifierError(node.pos_start,
+                                          node.pos_end,
+                                          f'Specifiers not allowed on existing variable {var_name}.')
+                )
 
             # only check number conversion if variable is static
             # if in static mode and not otherwise specified, the variable should be set to
@@ -350,16 +391,18 @@ class Interpreter:
                             value.value = float(value.value)
                             value.type = 'FLT'
                         else:
-                            return res.failure(StaticViolationError(node.pos_start,
-                                                                    node.pos_end,
-                                                                    f'Cannot convert static {og_val.type} to {value.type}'))
+                            return res.failure(
+                                StaticViolationError(node.pos_start,
+                                                     node.pos_end,
+                                                     f'Cannot convert static {og_val.type} to {value.type}')
+                            )
 
                         # handle when triggers for current variable if there are any
                         rmv = []
                         for t in value.triggers:
                             condition = res.register(self.visit(node.condition_node, context))
                             if condition.is_true():
-                                result = res.register(self.visit(node.body_node, context))
+                                res.register(self.visit(node.body_node, context))
                                 if res.error: return res
                                 if res.loop_should_break: rmv.append(t)
                             if res.should_return(): return res
@@ -369,9 +412,12 @@ class Interpreter:
 
                     # if the new value's inferred type is different than the original value,
                     # throw an error
-                    else: return res.failure(StaticViolationError(node.pos_start,
-                                                                  node.pos_end,
-                                                                  f'Cannot convert {var_name} [{og_val.type}] to {value.type}'))
+                    else: 
+                        return res.failure(
+                            StaticViolationError(node.pos_start,
+                                                 node.pos_end,
+                                                 f'Cannot convert {var_name} [{og_val.type}] to {value.type}')
+                        )
 
                 value.static = True
 
@@ -407,9 +453,12 @@ class Interpreter:
             case '/=': value = og_val.div(value)[0]
             case '%=': value = og_val.mod(value)[0]
             case '^=': value = og_val.pow(value)[0]
-            case _: return res.failure(InvalidOperationTokenError(node.pos_start,
-                                                                  node.pos_end,
-                                                                  f'Expected assignment operator, got {op_tok}'))
+            case _:
+                return res.failure(
+                    InvalidOperationTokenError(node.pos_start,
+                                               node.pos_end,
+                                               f'Expected assignment operator, got {op_tok}')
+                )
         context.symbol_table.set(var_name, value)
 
         rmv = []
@@ -471,14 +520,18 @@ class Interpreter:
             i += step_value.value
 
             result = res.register(self.visit(node.body_node, context))
-            if res.should_return() and not res.loop_should_continue and not res.loop_should_break: return res
+            if (res.should_return() and
+                not res.loop_should_continue and
+                not res.loop_should_break): return res
             if res.loop_should_continue: continue
             if res.loop_should_break: break
 
             elements.append(result)
 
-        return res.success(List(elements
-                                ).set_context(context).set_pos(node.pos_start, node.pos_end))
+        return res.success(
+            List(elements).set_context(context).set_pos(node.pos_start,
+                                                        node.pos_end)
+        )
 
     def visit_ForEachNode(self, node, context):
         res = RuntimeResult()
@@ -491,9 +544,12 @@ class Interpreter:
             capsule = container.elements
         elif isinstance(container, String):
             capsule = container.value
-        else: return res.failure(InvalidSyntaxError(node.pos_start,
-                                                    node.pos_end,
-                                                    f'Expected container, got {type(container)}'))
+        else:
+            return res.failure(
+                InvalidSyntaxError(node.pos_start,
+                                   node.pos_end,
+                                   f'Expected container, got {type(container)}')
+            )
 
         for elem in capsule:
             if isinstance(capsule, str):
@@ -509,8 +565,10 @@ class Interpreter:
             if res.loop_should_break: break
             elements.append(result)
 
-        return res.success(List(elements
-                                ).set_context(context).set_pos(node.pos_start, node.pos_end))
+        return res.success(
+            List(elements).set_context(context).set_pos(node.pos_start,
+                                                        node.pos_end)
+        )
 
     def visit_WhileNode(self, node, context):
         res = RuntimeResult()
@@ -531,8 +589,10 @@ class Interpreter:
             if res.loop_should_break: break
             elements.append(result)
 
-        return res.success(List(elements
-                                ).set_context(context).set_pos(node.pos_start, node.pos_end))
+        return res.success(
+            List(elements).set_context(context).set_pos(node.pos_start,
+                                                        node.pos_end)
+        )
 
     def visit_WhenNode(self, node, context):
         res = RuntimeResult()
@@ -540,24 +600,30 @@ class Interpreter:
 
         val = context.symbol_table.get(node.target)
         if val is None:
-            return res.failure(VariableAccessError(node.pos_start,
-                                                   node.pos_end,
-                                                   f'Variable {node.target} does not exist'))
+            return res.failure(
+                VariableAccessError(node.pos_start,
+                                    node.pos_end,
+                                    f'Variable {node.target} does not exist')
+            )
 
         # when triggers can currently only be added to named variables
         context.symbol_table.symbols[node.target].triggers.append(node)
 
-        return res.success(List(elements
-                                ).set_context(context).set_pos(node.pos_start, node.pos_end))
+        return res.success(
+            List(elements).set_context(context).set_pos(node.pos_start,
+                                                        node.pos_end)
+        )
 
     def visit_DeleteNode(self, node, context):
         res = RuntimeResult()
 
         name = node.name.value
         if name not in context.symbol_table.symbols:
-            return res.failure(VariableAccessError(node.pos_start,
-                                                   node.pos_end,
-                                                   f'Variable {node.target} does not exist'))
+            return res.failure(
+                VariableAccessError(node.pos_start,
+                                    node.pos_end,
+                                    f'Variable {node.target} does not exist')
+            )
         else: context.symbol_table.remove(name)
 
         return res.success(Number(0))
@@ -591,13 +657,19 @@ class Interpreter:
             f = open(os.path.join(context.root, f'{name}.sfr'), 'r')
             code = f.read()
             f.close()
-        except: return res.failure(ModuleNotFoundError(node.fname.pos_start,
-                                                       node.fname.pos_end,
-                                                       f'No module found: {name} (dir={os.getcwd()})'))
+        except:
+            return res.failure(
+                ModuleNotFoundError(node.fname.pos_start,
+                                    node.fname.pos_end,
+                                    f'No module found: {name} (dir={os.getcwd()})')
+            )
         ast = Parser(Lexer().tokenize(code).value).parse()
-        if ast.error: return res.failure(ModuleImportError(node.fname.pos_start,
-                                                           node.fname.pos_end,
-                                                           f'Error parsing file {name}'))
+        if ast.error:
+            return res.failure(
+                ModuleImportError(node.fname.pos_start,
+                                  node.fname.pos_end,
+                                  f'Error parsing file {name}')
+            )
         result = self.visit(ast.node, context)
 
         return res.success(result.value)
@@ -610,8 +682,8 @@ class Interpreter:
         func_val = Function(func_name,
                             body_node,
                             [],
-                            node.auto_return
-                            ).set_context(context).set_pos(node.pos_start, node.pos_end)
+                            node.auto_return).set_context(context).set_pos(node.pos_start,
+                                                                           node.pos_end)
         if node.var_name_tok: context.symbol_table.set(func_name, func_val)
 
         return res.success(func_val)
@@ -624,8 +696,8 @@ class Interpreter:
         arg_names = [a.value for a in node.arg_name_toks]
         func_val = Function(func_name, body_node,
                             arg_names,
-                            node.auto_return
-                            ).set_context(context).set_pos(node.pos_start, node.pos_end)
+                            node.auto_return).set_context(context).set_pos(node.pos_start,
+                                                                           node.pos_end)
         if node.var_name_tok: context.symbol_table.set(func_name, func_val)
 
         return res.success(func_val)
@@ -690,8 +762,8 @@ class Interpreter:
         struct_val = StructGenerator(struct_name,
                                      body_node,
                                      arg_names,
-                                     node.auto_return
-                                     ).set_context(context).set_pos(node.pos_start, node.pos_end)
+                                     node.auto_return).set_context(context).set_pos(node.pos_start,
+                                                                                    node.pos_end)
         if node.var_name_tok:
             context.symbol_table.set(struct_name, struct_val)
 
