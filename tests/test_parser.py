@@ -618,13 +618,13 @@ class TestParserErrors(unittest.TestCase):
             if e: raise e
 
     def test_invalid_struct_5(self):
-        with self.assertRaises(InvalidSyntaxError):
+        with self.assertRaises(UnopenedScopeError):
             context.symbol_table = get_sym_table()
             e = Parser(Lexer().tokenize(':: ]').value).parse().error
             if e: raise e
 
     def test_invalid_struct_6(self):
-        with self.assertRaises(InvalidSyntaxError):
+        with self.assertRaises(UnopenedScopeError):
             context.symbol_table = get_sym_table()
             e = Parser(Lexer().tokenize(':: <~ 1 + 1').value).parse().error
             if e: raise e
