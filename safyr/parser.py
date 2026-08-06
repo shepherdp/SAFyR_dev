@@ -174,7 +174,7 @@ class Parser:
         if self.current_tok.matches(Token(c.ID_KWD, 'once')):
             self.update(res)
             return res.success(OnceNode(pos_start,
-                                            self.current_tok.pos_start.copy()))
+                                        self.current_tok.pos_start.copy()))
 
         # break keyword handler
         if self.current_tok.matches(Token(c.ID_KWD, 'break')):
@@ -463,14 +463,8 @@ class Parser:
         elements = {}
         pos_start = self.current_tok.pos_start.copy()
 
-        # if self.current_tok.type != 'LCR':
-        #     return res.failure(InvalidSyntaxError(self.current_tok.pos_start,
-        #                                           self.current_tok.pos_end,
-        #                                           "Expected '{'"))
-        # self.update(res)
         self.expect(res, 'LCR', '{', message="Expected '{'")
         if res.error: return res
-        
 
         if self.current_tok.type == 'RCR':
             self.update(res)
@@ -486,7 +480,7 @@ class Parser:
                                                           self.current_tok.pos_end,
                                                           "Expected expression or '}'"))
 
-                self.expect(res, c.ID_OPS, ':', message="Expected ':'")
+                self.expect_operator(res, ':')
                 if res.error: return res
 
                 value = res.register(self.expr())
@@ -553,7 +547,7 @@ class Parser:
             if self.current_tok.type == 'LCR':
                 self.update(res)
 
-                self.expect(res, 'BREAK', None, message="Expected newline")
+                self.expect_newline(res)
                 if res.error: return res
 
                 statements = res.register(self.statements())
@@ -564,12 +558,10 @@ class Parser:
                 if res.error: return res
 
             else:
-                if not self.current_tok.matches(Token(c.ID_OPS, ':')):
-                    return res.failure(InvalidSyntaxError(self.current_tok.pos_start,
-                                                          self.current_tok.pos_end,
-                                                          f"Expected ':'"))
-
-                self.update(res)
+                self.expect_operator(res, ':')
+                # TODO: I added this line during editing. All tests were passing beforehand.
+                # Does that mean I haven't tested some case?
+                if res.error: return res
 
                 expr = res.register(self.expr())
                 if res.error: return res
@@ -599,12 +591,8 @@ class Parser:
         cases = []
         else_case = None
 
-        if not self.current_tok.value in case_keywords:
-            return res.failure(InvalidSyntaxError(self.current_tok.pos_start,
-                                                  self.current_tok.pos_end,
-                                                  f"Expected '{case_keywords}'"))
-
-        self.update(res)
+        self.expect_one(res, case_keywords)
+        if res.error: return res
 
         condition = res.register(self.expr())
         if res.error: return res
@@ -612,7 +600,7 @@ class Parser:
         if self.current_tok.type == 'LCR':
             self.update(res)
 
-            self.expect(res, 'BREAK', None, message="Expected newline")
+            self.expect_newline(res)
             if res.error: return res
 
             statements = res.register(self.statements())
@@ -632,11 +620,8 @@ class Parser:
                                                         "Expected '}'"))
 
         else:
-            if not self.current_tok.matches(Token(c.ID_OPS, ':')):
-                return res.failure(UnopenedScopeError(self.current_tok.pos_start,
-                                                      self.current_tok.pos_end,
-                                                      f"Expected ':'"))
-            self.update(res)
+            self.expect_operator(res, ':', err_type=UnopenedScopeError)
+            if res.error: return res
 
             expr = res.register(self.statement())
             if res.error: return res
@@ -652,11 +637,8 @@ class Parser:
     def for_expr(self):
         res = ParseResult()
 
-        if not self.current_tok.matches(Token(c.ID_KWD, 'for')):
-            return res.failure(InvalidSyntaxError(self.current_tok.pos_start,
-                                                  self.current_tok.pos_end,
-                                                  f"Expected 'for'"))
-        self.update(res)
+        self.expect_keyword(res, 'for')
+        if res.error: return res
 
         if self.current_tok.type != c.ID_SYM:
             return res.failure(InvalidSyntaxError(self.current_tok.pos_start,
@@ -665,20 +647,14 @@ class Parser:
         var_name = self.current_tok
         self.update(res)
 
-        if self.current_tok.value != '=':
-            return res.failure(InvalidSyntaxError(self.current_tok.pos_start,
-                                                  self.current_tok.pos_end,
-                                                  f"Expected '='"))
-        self.update(res)
+        self.expect(res, 'ASG', '=')
+        if res.error: return res
 
         start_value = res.register(self.expr())
         if res.error: return res
 
-        if not self.current_tok.matches(Token(c.ID_OPS, '..')):
-            return res.failure(InvalidSyntaxError(self.current_tok.pos_start,
-                                                  self.current_tok.pos_end,
-                                                  f"Expected '..'"))
-        self.update(res)
+        self.expect_operator(res, '..')
+        if res.error: return res
 
         end_value = res.register(self.expr())
         if res.error: return res
@@ -692,7 +668,7 @@ class Parser:
         if self.current_tok.type == 'LCR':
             self.update(res)
 
-            self.expect(res, 'BREAK', None, message="Expected newline")
+            self.expect_newline(res)
             if res.error: return res
 
             body = res.register(self.statements())
@@ -708,11 +684,8 @@ class Parser:
                                        body,
                                        True))
 
-        if not self.current_tok.matches(Token(c.ID_OPS, ':')):
-            return res.failure(UnopenedScopeError(self.current_tok.pos_start,
-                                                  self.current_tok.pos_end,
-                                                  f"Expected ':'"))
-        self.update(res)
+        self.expect_operator(res, ':', err_type=UnopenedScopeError)
+        if res.error: return res
 
         body = res.register(self.statement())
         if res.error: return res
@@ -727,11 +700,8 @@ class Parser:
     def foreach_expr(self):
         res = ParseResult()
 
-        if not self.current_tok.matches(Token(c.ID_KWD, 'foreach')):
-            return res.failure(InvalidSyntaxError(self.current_tok.pos_start,
-                                                  self.current_tok.pos_end,
-                                                  f"Expected 'foreach'"))
-        self.update(res)
+        self.expect_keyword(res, 'foreach')
+        if res.error: return res
 
         if self.current_tok.type != c.ID_SYM:
             return res.failure(InvalidSyntaxError(self.current_tok.pos_start,
@@ -740,18 +710,16 @@ class Parser:
         var_name = self.current_tok
         self.update(res)
 
-        if not self.current_tok.matches(Token(c.ID_KWD, 'in')):
-            return res.failure(InvalidSyntaxError(self.current_tok.pos_start,
-                                                  self.current_tok.pos_end,
-                                                  f"Expected 'in'"))
-        self.update(res)
+        self.expect_keyword(res, 'in')
+        if res.error: return res
+
         container = res.register(self.expr())
         if res.error: return res
 
         if self.current_tok.type == 'LCR':
             self.update(res)
 
-            self.expect(res, 'BREAK', None, message="Expected newline")
+            self.expect_newline(res)
             if res.error: return res
 
             body = res.register(self.statements())
@@ -779,7 +747,7 @@ class Parser:
     def while_expr(self):
         res = ParseResult()
 
-        self.expect(res, c.ID_KWD, 'while', message="Expected while")
+        self.expect_keyword(res, 'while')
         if res.error: return res
 
         condition = res.register(self.expr())
@@ -788,7 +756,7 @@ class Parser:
         self.expect(res, 'LCR', '{')
         if not res.error:
 
-            self.expect(res, 'BREAK', None, message="Expected newline")
+            self.expect_newline(res)
             if res.error: return res
 
             body = res.register(self.statements())
@@ -802,11 +770,9 @@ class Parser:
                                          True))
 
         res.error = None
-        if not self.current_tok.matches(Token(c.ID_OPS, ':')):
-            return res.failure(UnopenedScopeError(self.current_tok.pos_start,
-                                                  self.current_tok.pos_end,
-                                                  "Expected ':' or '{'"))
-        self.update(res)
+        self.expect_operator(res, ':', err_type=UnopenedScopeError)
+        if res.error: return res
+
         body = res.register(self.statement())
         if res.error: return res
 
@@ -817,7 +783,7 @@ class Parser:
     def when_expr(self):
         res = ParseResult()
 
-        self.expect(res, c.ID_KWD, 'when', message="Expected when")
+        self.expect_keyword(res, 'when')
         if res.error: return res
 
         condition = res.register(self.expr())
@@ -826,17 +792,11 @@ class Parser:
         self.expect(res, 'LCR', '{')
         if not res.error:
 
-            self.expect(res, 'BREAK', None, message="Expected newline")
+            self.expect_newline(res)
             if res.error: return res
 
             body = res.register(self.statements())
             if res.error: return res
-
-            # if not self.current_tok.type == 'RCR':
-            #     return res.failure(UnclosedScopeError(self.current_tok.pos_start,
-            #                                           self.current_tok.pos_end,
-            #                                           "Expected '}'"))
-            # self.update(res)
 
             self.expect(res, 'RCR', '}', message="Expected '}'", err_type=UnclosedScopeError)
             if res.error: return res
@@ -846,11 +806,8 @@ class Parser:
                                         True))
 
         res.error = None
-        if not self.current_tok.matches(Token(c.ID_OPS, ':')):
-            return res.failure(UnopenedScopeError(self.current_tok.pos_start,
-                                                  self.current_tok.pos_end,
-                                                  "Expected ':' or '{'"))
-        self.update(res)
+        self.expect_operator(res, ':', err_type=UnopenedScopeError)
+        if res.error: return res
         body = res.register(self.statement())
         if res.error: return res
 
@@ -861,32 +818,26 @@ class Parser:
     def defer_expr(self):
         res = ParseResult()
 
-        self.expect(res, c.ID_KWD, 'defer', message="Expected defer")
+        self.expect_keyword(res, 'defer')
         if res.error: return res
 
         if self.current_tok.type == 'LCR':
             self.update(res)
 
-            self.expect(res, 'BREAK', None, message="Expected newline")
+            self.expect_newline(res)
             if res.error: return res
 
             body = res.register(self.statements())
             if res.error: return res
 
-            if not self.current_tok.type == 'RCR':
-                return res.failure(UnclosedScopeError(self.current_tok.pos_start,
-                                                      self.current_tok.pos_end,
-                                                      "Expected '}'"))
-            self.update(res)
+            self.expect(res, 'RCR', '}', message="Expected '}'", err_type=UnclosedScopeError)
+            if res.error: return res
 
             return res.success(DeferNode(body,
                                          True))
 
-        if not self.current_tok.matches(Token(c.ID_OPS, ':')):
-            return res.failure(UnopenedScopeError(self.current_tok.pos_start,
-                                                  self.current_tok.pos_end,
-                                                  "Expected ':' or '{'"))
-        self.update(res)
+        self.expect_operator(res, ':', err_type=UnopenedScopeError)
+        if res.error: return res
         body = res.register(self.statement())
         if res.error: return res
 
@@ -900,23 +851,23 @@ class Parser:
             return res.failure(InvalidSyntaxError(self.current_tok.pos_start,
                                                   self.current_tok.pos_end,
                                                   f"Expected 'try'"))
+        # self.expect_keyword(res, 'try')
+        # if res.error: return res
+
         try_tok = self.current_tok
         self.update(res)
 
         if self.current_tok.type == 'LCR':
             self.update(res)
 
-            self.expect(res, 'BREAK', None, message="Expected newline")
+            self.expect_newline(res)
             if res.error: return res
 
             try_node = res.register(self.statements())
             if res.error: return res
 
-            if not self.current_tok.type == 'RCR':
-                return res.failure(UnclosedScopeError(self.current_tok.pos_start,
-                                                      self.current_tok.pos_end,
-                                                      "Expected '}'"))
-            self.update(res)
+            self.expect(res, 'RCR', '}', message="Expected '}'", err_type=UnclosedScopeError)
+            if res.error: return res
 
         elif self.current_tok.matches(Token(c.ID_OPS, ':')):
             self.update(res)
@@ -929,26 +880,20 @@ class Parser:
         while self.current_tok.type == 'BREAK':
             self.update(res)
 
-        if not self.current_tok.matches(Token(c.ID_KWD, 'catch')):
-            return res.failure(InvalidSyntaxError(self.current_tok.pos_start,
-                                                  self.current_tok.pos_end,
-                                                  f"Expected 'catch'"))
-        self.update(res)
+        self.expect_keyword(res, 'catch')
+        if res.error: return res
 
         if self.current_tok.type == 'LCR':
             self.update(res)
 
-            self.expect(res, 'BREAK', None, message="Expected newline")
+            self.expect_newline(res)
             if res.error: return res
 
             catch_node = res.register(self.statements())
             if res.error: return res
 
-            if not self.current_tok.type == 'RCR':
-                return res.failure(UnclosedScopeError(self.current_tok.pos_start,
-                                                      self.current_tok.pos_end,
-                                                      "Expected '}'"))
-            self.update(res)
+            self.expect(res, 'RCR', '}', message="Expected '}'", err_type=UnclosedScopeError)
+            if res.error: return res
 
         elif self.current_tok.matches(Token(c.ID_OPS, ':')):
             self.update(res)
@@ -964,11 +909,8 @@ class Parser:
     def func_def(self):
         res = ParseResult()
 
-        if not self.current_tok.matches(Token(c.ID_OPS, ':')):
-            return res.failure(InvalidSyntaxError(self.current_tok.pos_start,
-                                                  self.current_tok.pos_end,
-                                                  f"Expected ':'"))
-        self.update(res)
+        self.expect_operator(res, ':')
+        if res.error: return res
 
         if self.current_tok.type == c.ID_SYM:
             var_name_tok = self.current_tok
@@ -1012,19 +954,14 @@ class Parser:
             if self.current_tok.type == 'LCR':
                 self.update(res)
 
-                self.expect(res, 'BREAK', None, message="Expected newline")
+                self.expect_newline(res)
                 if res.error: return res
 
                 body = res.register(self.statements())
                 if res.error: return res
 
                 # function definition must end with if
-                if self.current_tok.type != 'RCR':
-                    return res.failure(UnclosedScopeError(self.current_tok.pos_start,
-                                                          self.current_tok.pos_end,
-                                                          "Expected '}'"))
-                # advance past end
-                self.update(res)
+                self.expect(res, 'RCR', '}', message="Expected '}'", err_type=UnclosedScopeError)
 
                 # return multi line function definition
                 return res.success(FunctionDefinitionNode(var_name_tok,
@@ -1052,11 +989,8 @@ class Parser:
     def interface_def(self):
         res = ParseResult()
 
-        if not self.current_tok.matches(Token('DOT', '.')):
-            return res.failure(InvalidSyntaxError(self.current_tok.pos_start,
-                                                  self.current_tok.pos_end,
-                                                  f"Expected '.'"))
-        self.update(res)
+        self.expect(res, 'DOT', '.', message=f"Expected '.'")
+        if res.error: return res
 
         if self.current_tok.type != c.ID_SYM:
             return res.failure(InvalidSyntaxError(self.current_tok.pos_start,
@@ -1065,11 +999,8 @@ class Parser:
         var_name_tok = self.current_tok
         self.update(res)
 
-        if self.current_tok.type != 'INJ':
-            return res.failure(InvalidSyntaxError(self.current_tok.pos_start,
-                                                  self.current_tok.pos_end,
-                                                  f"Expected <~"))
-        self.update(res)
+        self.expect(res, 'INJ', '<~', message=f"Expected '<~'")
+        if res.error: return res
         body = res.register(self.statement())
         if res.error: return res
 
@@ -1080,11 +1011,8 @@ class Parser:
     def struct_def(self):
         res = ParseResult()
 
-        if not self.current_tok.matches(Token(c.ID_OPS, '::')):
-            return res.failure(InvalidSyntaxError(self.current_tok.pos_start,
-                                                  self.current_tok.pos_end,
-                                                  f"Expected '::'"))
-        self.update(res)
+        self.expect_operator(res, '::')
+        if res.error: return res
 
         if self.current_tok.type == c.ID_SYM:
             var_name_tok = self.current_tok
@@ -1096,11 +1024,6 @@ class Parser:
                                                       f"Expected '['"))
         else:
             var_name_tok = None
-            # self.expect(res,
-            #             'LBR', '[',
-            #             message="Expected identifier or '['",
-            #             err_type=UnopenedScopeError)
-            # if res.error: return res
             if self.current_tok.type != 'LBR':
                 return res.failure(UnopenedScopeError(self.current_tok.pos_start,
                                                       self.current_tok.pos_end,
@@ -1112,11 +1035,8 @@ class Parser:
             arg_name_toks.append(self.current_tok)
             self.update(res)
 
-        if self.current_tok.type != 'RBR':
-            return res.failure(UnclosedScopeError(self.current_tok.pos_start,
-                                                  self.current_tok.pos_end,
-                                                  f"Expected identifier or ']'"))
-        self.update(res)
+        self.expect(res, 'RBR', ']', message=f"Expected identifier or ']'", err_type=UnclosedScopeError)
+        if res.error: return res
 
         # { follows optional brackets
         if self.current_tok.type == 'LCR':
@@ -1128,13 +1048,8 @@ class Parser:
                 body = res.register(self.statements())
                 if res.error: return res
 
-                # function definition must end with if
-                if not self.current_tok.type == 'RCR':
-                    return res.failure(UnclosedScopeError(self.current_tok.pos_start,
-                                                          self.current_tok.pos_end,
-                                                          "Expected '}'"))
-                # advance past end
-                self.update(res)
+                self.expect(res, 'RCR', '}', message="Expected '}'", err_type=UnclosedScopeError)
+                if res.error: return res
 
                 # return multi line function definition
                 return res.success(StructDefinitionNode(var_name_tok,
@@ -1143,6 +1058,7 @@ class Parser:
                                                         True))
 
         # fail if no injection operator
+        # TODO: why is this here?
         return res.failure(InvalidSyntaxError(self.current_tok.pos_start,
                                               self.current_tok.pos_end,
                                               f"Expected newline"))
@@ -1177,6 +1093,41 @@ class Parser:
             res.failure(err_type(self.current_tok.pos_start,
                                  self.current_tok.pos_end,
                                  message))
+            return
+        self.update(res)
+
+    def expect_newline(self, res):
+        if self.current_tok.type != 'BREAK' or self.current_tok.value is not None:
+            res.failure(InvalidSyntaxError(self.current_tok.pos_start,
+                                           self.current_tok.pos_end,
+                                           "Expected newline"))
+            return
+        self.update(res)
+
+    def expect_keyword(self, res, token_val, err_type=InvalidSyntaxError):
+        if self.current_tok.type != c.ID_KWD or self.current_tok.value != token_val:
+            res.failure(err_type(self.current_tok.pos_start,
+                                    self.current_tok.pos_end,
+                                    f"Expected keyword '{token_val}'"))
+            return
+        self.update(res)
+
+    def expect_operator(self, res, token_val, err_type=InvalidSyntaxError):
+        if self.current_tok.type != c.ID_OPS or self.current_tok.value != token_val:
+            res.failure(err_type(self.current_tok.pos_start,
+                                 self.current_tok.pos_end,
+                                 f"Expected operator '{token_val}'"))
+            return
+        self.update(res)
+
+    def expect_one(self, res, token_vals, message=None, err_type=InvalidSyntaxError):
+        if self.current_tok.value not in token_vals:
+            if message is None:
+                message = f"Expected one of: {token_vals}"
+
+            res.failure(err_type(self.current_tok.pos_start,
+                                    self.current_tok.pos_end,
+                                    message))
             return
         self.update(res)
 
