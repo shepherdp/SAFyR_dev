@@ -193,18 +193,12 @@ class Parser:
         warn_msg = ''
 
         statictype = 'default'
-        constvar = False
-        globalvar = False
 
         # check for constant declaration
-        if self.current_tok.matches(Token(c.ID_KWD, 'const')):
-            constvar = True
-            self.update(res)
+        constvar = self.expect_optional(res, c.ID_KWD, 'const')
 
         # check for global declaration
-        if self.current_tok.matches(Token(c.ID_KWD, 'global')):
-            globalvar = True
-            self.update(res)
+        globalvar = self.expect_optional(res, c.ID_KWD, 'global')
 
         # warning about unnecessary var keyword
         if self.current_tok.matches(Token(c.ID_KWD, 'var')):
@@ -469,11 +463,14 @@ class Parser:
         elements = {}
         pos_start = self.current_tok.pos_start.copy()
 
-        if self.current_tok.type != 'LCR':
-            return res.failure(InvalidSyntaxError(self.current_tok.pos_start,
-                                                  self.current_tok.pos_end,
-                                                  "Expected '{'"))
-        self.update(res)
+        # if self.current_tok.type != 'LCR':
+        #     return res.failure(InvalidSyntaxError(self.current_tok.pos_start,
+        #                                           self.current_tok.pos_end,
+        #                                           "Expected '{'"))
+        # self.update(res)
+        self.expect(res, 'LCR', '{', message="Expected '{'")
+        if res.error: return res
+        
 
         if self.current_tok.type == 'RCR':
             self.update(res)
@@ -489,11 +486,8 @@ class Parser:
                                                           self.current_tok.pos_end,
                                                           "Expected expression or '}'"))
 
-                if not self.current_tok.matches(Token(c.ID_OPS, ':')):
-                    return res.failure(InvalidSyntaxError(self.current_tok.pos_start,
-                                                          self.current_tok.pos_end,
-                                                          f"Expected ':'"))
-                self.update(res)
+                self.expect(res, c.ID_OPS, ':', message="Expected ':'")
+                if res.error: return res
 
                 value = res.register(self.expr())
                 if res.error: return res
@@ -502,12 +496,8 @@ class Parser:
                 while self.current_tok.matches(Token('BREAK', None)):
                     self.update(res)
 
-            if self.current_tok.type != 'RCR':
-                return res.failure(UnclosedScopeError(self.current_tok.pos_start,
-                                                      self.current_tok.pos_end,
-                                                      f"Expected expression or ']'"))
-
-            self.update(res)
+            self.expect(res, 'RCR', '}', message="Expected expression or '}'", err_type=UnclosedScopeError)
+            if res.error: return res
 
         return res.success(MapNode(elements,
                                    pos_start,
@@ -518,11 +508,8 @@ class Parser:
         element_nodes = []
         pos_start = self.current_tok.pos_start.copy()
 
-        if self.current_tok.type != 'LBR':
-            return res.failure(InvalidSyntaxError(self.current_tok.pos_start,
-                                                  self.current_tok.pos_end,
-                                                  f"Expected '['"))
-        self.update(res)
+        self.expect(res, 'LBR', '[', message="Expected '['")
+        if res.error: return res
 
         if self.current_tok.type == 'RBR':
             self.update(res)
@@ -535,11 +522,8 @@ class Parser:
                                                           self.current_tok.pos_end,
                                                           "Expected expression or ']'"))
 
-            if self.current_tok.type != 'RBR':
-                return res.failure(UnclosedScopeError(self.current_tok.pos_start,
-                                                      self.current_tok.pos_end,
-                                                      f"Expected ']'"))
-            self.update(res)
+            self.expect(res, 'RBR', ']', message="Expected ']'", err_type=UnclosedScopeError)
+            if res.error: return res
 
         return res.success(ListNode(element_nodes,
                                     pos_start,
@@ -576,12 +560,8 @@ class Parser:
                 if res.error: return res
                 else_case = (statements, True)
 
-                if self.current_tok.type == 'RCR':
-                    self.update(res)
-                else:
-                    return res.failure(UnclosedScopeError(self.current_tok.pos_start,
-                                                          self.current_tok.pos_end,
-                                                          'Expected }'))
+                self.expect(res, 'RCR', '}', message="Expected '}'", err_type=UnclosedScopeError)
+                if res.error: return res
 
             else:
                 if not self.current_tok.matches(Token(c.ID_OPS, ':')):
@@ -718,11 +698,8 @@ class Parser:
             body = res.register(self.statements())
             if res.error: return res
 
-            if not self.current_tok.type == 'RCR':
-                return res.failure(UnclosedScopeError(self.current_tok.pos_start,
-                                                      self.current_tok.pos_end,
-                                                      "Expected '}'"))
-            self.update(res)
+            self.expect(res, 'RCR', '}', message="Expected '}'", err_type=UnclosedScopeError)
+            if res.error: return res
 
             return res.success(ForNode(var_name,
                                        start_value,
@@ -780,11 +757,8 @@ class Parser:
             body = res.register(self.statements())
             if res.error: return res
 
-            if not self.current_tok.type == 'RCR':
-                return res.failure(UnclosedScopeError(self.current_tok.pos_start,
-                                                      self.current_tok.pos_end,
-                                                      "Expected '}'"))
-            self.update(res)
+            self.expect(res, 'RCR', '}', message="Expected '}'", err_type=UnclosedScopeError)
+            if res.error: return res
 
             return res.success(ForEachNode(var_name, container, body, True))
 
@@ -820,11 +794,8 @@ class Parser:
             body = res.register(self.statements())
             if res.error: return res
 
-            if not self.current_tok.type == 'RCR':
-                return res.failure(UnclosedScopeError(self.current_tok.pos_start,
-                                                      self.current_tok.pos_end,
-                                                      "Expected '}'"))
-            self.update(res)
+            self.expect(res, 'RCR', '}', message="Expected '}'", err_type=UnclosedScopeError)
+            if res.error: return res
 
             return res.success(WhileNode(condition,
                                          body,
@@ -861,11 +832,14 @@ class Parser:
             body = res.register(self.statements())
             if res.error: return res
 
-            if not self.current_tok.type == 'RCR':
-                return res.failure(UnclosedScopeError(self.current_tok.pos_start,
-                                                      self.current_tok.pos_end,
-                                                      "Expected '}'"))
-            self.update(res)
+            # if not self.current_tok.type == 'RCR':
+            #     return res.failure(UnclosedScopeError(self.current_tok.pos_start,
+            #                                           self.current_tok.pos_end,
+            #                                           "Expected '}'"))
+            # self.update(res)
+
+            self.expect(res, 'RCR', '}', message="Expected '}'", err_type=UnclosedScopeError)
+            if res.error: return res
 
             return res.success(WhenNode(condition,
                                         body,
@@ -887,11 +861,8 @@ class Parser:
     def defer_expr(self):
         res = ParseResult()
 
-        if not self.current_tok.matches(Token(c.ID_KWD, 'defer')):
-            return res.failure(InvalidSyntaxError(self.current_tok.pos_start,
-                                                  self.current_tok.pos_end,
-                                                  f"Expected 'defer'"))
-        self.update(res)
+        self.expect(res, c.ID_KWD, 'defer', message="Expected defer")
+        if res.error: return res
 
         if self.current_tok.type == 'LCR':
             self.update(res)
@@ -1208,3 +1179,9 @@ class Parser:
                                  message))
             return
         self.update(res)
+
+    def expect_optional(self, res, token_type, token_val):
+        if self.current_tok.type != token_type or self.current_tok.value != token_val:
+            return False
+        self.update(res)
+        return True
