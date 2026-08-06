@@ -61,9 +61,7 @@ class Parser:
         statements = []
         pos_start = self.current_tok.pos_start.copy()
 
-        # skip newlines
-        while self.current_tok.type == 'BREAK':
-            self.update(res)
+        self.consume_newlines(res)
 
         # read in first statement
         statement = res.register(self.statement())
@@ -74,6 +72,7 @@ class Parser:
         e = None
 
         # read in any additional statements
+        # TODO: REFACTOR THIS THIS IS AWFUL
         while True:
             newline_count = 0
             while self.current_tok.type == 'BREAK':
@@ -120,8 +119,8 @@ class Parser:
         pos_start = self.current_tok.pos_start.copy()
 
         # use keyword handler
-        if self.current_tok.matches(Token(c.ID_KWD, 'use')):
-            self.update(res)
+        self.expect_keyword(res, 'use')
+        if not res.error:
 
             # use must be followed by an identifier
             if self.current_tok.type == c.ID_SYM:
@@ -141,8 +140,9 @@ class Parser:
             return res.success(UseNode(fname))
 
         # return keyword handler
-        if self.current_tok.matches(Token(c.ID_KWD, 'return')):
-            self.update(res)
+        res.error = None
+        self.expect_keyword(res, 'return')
+        if not res.error:
             expr, _ = res.try_register(self.expr())
             if not expr: self.reverse(res.to_reverse_count)
             return res.success(ReturnNode(expr,
@@ -150,8 +150,9 @@ class Parser:
                                           self.current_tok.pos_start.copy()))
 
         # del keyword handler
-        if self.current_tok.matches(Token(c.ID_KWD, 'del')):
-            self.update(res)
+        res.error = None
+        self.expect_keyword(res, 'del')
+        if not res.error:
 
             # del must be followed by an identifier
             if not self.current_tok.type == c.ID_SYM:
@@ -165,24 +166,28 @@ class Parser:
             return res.success(DeleteNode(to_delete))
 
         # continue keyword handler
-        if self.current_tok.matches(Token(c.ID_KWD, 'continue')):
-            self.update(res)
+        res.error = None
+        self.expect_keyword(res, 'continue')
+        if not res.error:
             return res.success(ContinueNode(pos_start,
                                             self.current_tok.pos_start.copy()))
 
         # once keyword handler
-        if self.current_tok.matches(Token(c.ID_KWD, 'once')):
-            self.update(res)
+        res.error = None
+        self.expect_keyword(res, 'once')
+        if not res.error:
             return res.success(OnceNode(pos_start,
                                         self.current_tok.pos_start.copy()))
 
         # break keyword handler
-        if self.current_tok.matches(Token(c.ID_KWD, 'break')):
-            self.update(res)
+        res.error = None
+        self.expect_keyword(res, 'break')
+        if not res.error:
             return res.success(BreakNode(pos_start,
                                          self.current_tok.pos_start.copy()))
 
         # try to read expression if no keyword statements found
+        res.error = None
         expr = res.register(self.expr())
         if res.error: return res
 
@@ -201,11 +206,10 @@ class Parser:
         globalvar = self.expect_optional(res, c.ID_KWD, 'global')
 
         # warning about unnecessary var keyword
-        if self.current_tok.matches(Token(c.ID_KWD, 'var')):
+        if self.expect_optional(res, c.ID_KWD, 'var'):
             if not self.static:
                 warn_msg = f'kwd <var> has no effect'
             statictype = 'var'
-            self.update(res)
 
         # check for explicit type definition
         if self.current_tok.value in ['int', 'flt', 'str', 'lst', 'map']:
@@ -258,7 +262,6 @@ class Parser:
                                                          'OR',
                                                          'XOR')))
         if res.error: return res
-
         if warn_msg: self.warnings.append(warn_msg)
 
         # if successful, check if the expression was on the left side of an
@@ -487,8 +490,7 @@ class Parser:
                 if res.error: return res
 
                 elements[key] = value
-                while self.current_tok.matches(Token('BREAK', None)):
-                    self.update(res)
+                self.consume_newlines(res)
 
             self.expect(res, 'RCR', '}', message="Expected expression or '}'", err_type=UnclosedScopeError)
             if res.error: return res
@@ -573,8 +575,7 @@ class Parser:
         res = ParseResult()
         cases, else_case = [], None
 
-        while self.current_tok.type == 'BREAK':
-            self.update(res)
+        self.consume_newlines(res)
 
         if self.current_tok.value in ('!?', 'elif'):
             all_cases = res.register(self.if_expr_b())
@@ -877,8 +878,7 @@ class Parser:
                                                     self.current_tok.pos_end,
                                                     "Expected ':' or '{'"))
 
-        while self.current_tok.type == 'BREAK':
-            self.update(res)
+        self.consume_newlines(res)
 
         self.expect_keyword(res, 'catch')
         if res.error: return res
@@ -1136,3 +1136,13 @@ class Parser:
             return False
         self.update(res)
         return True
+
+    def expect_one_optional(self, res, token_vals):
+        if self.current_tok.value not in token_vals:
+            return False
+        self.update(res)
+        return True
+
+    def consume_newlines(self, res):
+        while self.current_tok.type == 'BREAK':
+            self.update(res)
