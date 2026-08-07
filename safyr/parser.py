@@ -313,13 +313,10 @@ class Parser:
         atom = res.register(self.atom())
         if res.error: return res
 
-        if self.current_tok.type == 'LPR':
-            self.update(res)
+        if self.accept_token_type(res, 'LPR'):
             arg_nodes = []
 
-            if self.current_tok.type == 'RPR':
-                self.update(res)
-            else:
+            if not self.accept_token_type(res, 'RBR'):
                 while self.current_tok.type != 'RPR':
                     arg_nodes.append(res.register(self.expr()))
                     if res.error: return res
