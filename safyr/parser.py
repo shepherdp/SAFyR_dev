@@ -760,6 +760,7 @@ class Parser:
         res.error = None
         self.expect_operator(res, ':', err_type=UnopenedScopeError)
         if res.error: return res
+
         body = res.register(self.statement())
         if res.error: return res
 
@@ -787,6 +788,7 @@ class Parser:
 
         self.expect_operator(res, ':', err_type=UnopenedScopeError)
         if res.error: return res
+
         body = res.register(self.statement())
         if res.error: return res
 
@@ -849,38 +851,20 @@ class Parser:
 
         if self.accept_token_type(res, c.ID_SYM):
             var_name_tok = self.previous_tok
-            # self.expect_token_type(res, 'LBR', err_type=UnopenedScopeError)
-            # if res.error: return res
+            self.expect_token_type(res, 'LBR', err_type=UnopenedScopeError)
+            if res.error: return res
 
-            if self.current_tok.type != 'LBR':
-                return res.failure(UnopenedScopeError(self.current_tok.pos_start,
-                                                      self.current_tok.pos_end,
-                                                      f"Expected '['"))
         else:
             var_name_tok = None
-            if self.current_tok.type != 'LBR':
-                return res.failure(UnopenedScopeError(self.current_tok.pos_start,
-                                                      self.current_tok.pos_end,
-                                                      f"Expected identifier or '['"))
-
-        self.update(res)
+            self.expect_token_type(res, 'LBR', err_type=UnopenedScopeError)
+            if res.error: return res
 
         arg_name_toks = []
-        if self.current_tok.type == c.ID_SYM:
-            while self.current_tok.type == c.ID_SYM:
-                arg_name_toks.append(self.current_tok)
-                self.update(res)
+        while self.accept_token_type(res, c.ID_SYM):
+            arg_name_toks.append(self.previous_tok)
 
-            if self.current_tok.type != 'RBR':
-                return res.failure(UnclosedScopeError(self.current_tok.pos_start,
-                                                      self.current_tok.pos_end,
-                                                      f"Expected ']'"))
-        else:
-            if self.current_tok.type != 'RBR':
-                return res.failure(UnclosedScopeError(self.current_tok.pos_start,
-                                                      self.current_tok.pos_end,
-                                                      f"Expected identifier or ']'"))
-        self.update(res)
+        self.expect_token_type(res, 'RBR', UnclosedScopeError)
+        if res.error: return res
 
         # <~ follows optional brackets
         if self.accept_token_type(res, 'INJ'):
