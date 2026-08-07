@@ -339,13 +339,21 @@ class Parser:
         res = ParseResult()
         tok = self.current_tok
 
+        # kwds = {'LBR': 'list_expr',
+        #         'LCR': 'map_expr',
+        #         'for: ': 'for_expr',
+        #         'foreach': 'foreach_expr',
+        #         'while': 'while_expr',
+        #         'when': 'when_expr',
+        #         'defer': 'defer_expr',
+        #         'try': 'try_expr'}
+
         # register number
         if self.accept_one_token_type(res, [c.ID_INT, c.ID_FLT]):
             return res.success(NumberNode(tok))
 
         # register string
-        elif c.ID_STR in tok.type:
-            self.update(res)
+        elif self.accept_one_token_type(res, [c.ID_STR, 'FSTR']):
             return res.success(StringNode(tok))
 
         # register identifier
@@ -358,19 +366,18 @@ class Parser:
             if res.error: return res
 
             self.expect_token_type(res, 'RPR')
+            # TODO: I just added this line and it didn't change the test suite.
+            # Am I forgetting to try an unclosed parenthetical expression?
+            if res.error: return res
             return res.success(expr)
 
         # register list
         elif self.accept_token_type(res, 'LBR'):
-            list_expr = res.register(self.list_expr())
-            if res.error: return res
-            return res.success(list_expr)
+            return self.try_process_keyword(res, 'list_expr')
 
         # register map
         elif self.accept_token_type(res, 'LCR'):
-            map_expr = res.register(self.map_expr())
-            if res.error: return res
-            return res.success(map_expr)
+            return self.try_process_keyword(res, 'map_expr')
 
         # register conditional chain
         elif tok.matches(Token(c.ID_KWD, '?')) or tok.matches(Token(c.ID_KWD, 'if')):
@@ -380,64 +387,61 @@ class Parser:
 
         # register for loop
         elif self.accept_keyword(res, 'for'):
-            for_expr = res.register(self.for_expr())
-            if res.error: return res
-            return res.success(for_expr)
+            return self.try_process_keyword(res, 'for_expr')
 
         # register iterator loop
         elif self.accept_keyword(res, 'foreach'):
-            foreach_expr = res.register(self.foreach_expr())
-            if res.error: return res
-            return res.success(foreach_expr)
+            return self.try_process_keyword(res, 'foreach_expr')
 
         # register while loop
         elif self.accept_keyword(res, 'while'):
-            while_expr = res.register(self.while_expr())
-            if res.error: return res
-            return res.success(while_expr)
+            return self.try_process_keyword(res, 'while_expr')
 
         # register when trigger
         elif self.accept_keyword(res, 'when'):
-            when_expr = res.register(self.when_expr())
-            if res.error: return res
-            return res.success(when_expr)
+            return self.try_process_keyword(res, 'when_expr')
 
         # register defer block
         elif self.accept_keyword(res, 'defer'):
-            defer_expr = res.register(self.defer_expr())
-            if res.error: return res
-            return res.success(defer_expr)
+            return self.try_process_keyword(res, 'defer_expr')
 
         # register try/catch block
         elif self.accept_keyword(res, 'try'):
-            try_expr = res.register(self.try_expr())
-            if res.error: return res
-            return res.success(try_expr)
+            return self.try_process_keyword(res, 'try_expr')
 
         # register function definition
-        elif tok.matches(Token(c.ID_OPS, ':')):
-            func_def = res.register(self.func_def())
-            if res.error: return res
-            return res.success(func_def)
+        elif self.accept_operator(res, ':'):
+            return self.try_process_keyword(res, 'func_def')
 
         # register struct definition
-        elif tok.matches(Token(c.ID_OPS, '::')):
-            struct_def = res.register(self.struct_def())
-            if res.error: return res
-            return res.success(struct_def)
+        elif self.accept_operator(res, '::'):
+            return self.try_process_keyword(res, 'struct_def')
+
+        # else:
+        #     for kwd, func in kwds.items():
+        #         if self.accept_keyword(res, kwd):
+        #             return self.try_process_keyword(res, func)
 
         return res.failure(InvalidSyntaxError(tok.pos_start,
                                               tok.pos_end,
                                               "Expected atom"))
+
+    def try_process_keyword(self, res, func):
+        func_pointer = getattr(self, func, Parser.process_function_not_defined)
+        val = res.register(func_pointer())
+        if res.error: return res
+        return res.success(val)
+
+    @staticmethod
+    def process_function_not_defined(res, func):
+        raise Exception(f'No process function defined for {func}.')
 
     def map_expr(self):
         res = ParseResult()
         elements = {}
         pos_start = self.current_tok.pos_start.copy()
 
-        if self.current_tok.type == 'RCR':
-            self.update(res)
-        else:
+        if not self.accept_token_type(res, 'RCR'):
             # format is { expr : expr expr : expr ... }
             # newlines help with clarity, e.g.
             # { expr : expr
@@ -470,9 +474,7 @@ class Parser:
         element_nodes = []
         pos_start = self.current_tok.pos_start.copy()
 
-        if self.current_tok.type == 'RBR':
-            self.update(res)
-        else:
+        if not self.accept_token_type(res, 'RBR'):
             # format is [ expr expr ... ]
             while self.current_tok.type not in ['RBR', 'EOF']:
                 element_nodes.append(res.register(self.expr()))
@@ -601,12 +603,9 @@ class Parser:
     def for_expr(self):
         res = ParseResult()
 
-        if self.current_tok.type != c.ID_SYM:
-            return res.failure(InvalidSyntaxError(self.current_tok.pos_start,
-                                                  self.current_tok.pos_end,
-                                                  f"Expected identifier"))
-        var_name = self.current_tok
-        self.update(res)
+        self.expect_token_type(res, c.ID_SYM)
+        if res.error: return res
+        var_name = self.previous_tok
 
         self.expect(res, 'ASG', '=')
         if res.error: return res
@@ -620,36 +619,14 @@ class Parser:
         end_value = res.register(self.expr())
         if res.error: return res
 
-        if self.current_tok.matches(Token(c.ID_OPS, '..')):
-            self.update(res)
+        if self.accept_operator(res, '..'):
             step_value = res.register(self.expr())
             if res.error: return res
         else: step_value = None
 
-        if self.current_tok.type == 'LCR':
-            self.update(res)
-
-            self.expect_newline(res)
-            if res.error: return res
-
-            body = res.register(self.statements())
-            if res.error: return res
-
-            self.expect(res, 'RCR', '}', message="Expected '}'", err_type=UnclosedScopeError)
-            if res.error: return res
-
-            return res.success(ForNode(var_name,
-                                       start_value,
-                                       end_value,
-                                       step_value,
-                                       body,
-                                       True))
-
-        self.expect_operator(res, ':', err_type=UnopenedScopeError)
-        if res.error: return res
-
-        body = res.register(self.statement())
-        if res.error: return res
+        body, _ = self.parse_statement_or_block(res)
+        if res.error:
+            return res
 
         return res.success(ForNode(var_name,
                                    start_value,
@@ -674,28 +651,9 @@ class Parser:
         container = res.register(self.expr())
         if res.error: return res
 
-        if self.current_tok.type == 'LCR':
-            self.update(res)
-
-            self.expect_newline(res)
-            if res.error: return res
-
-            body = res.register(self.statements())
-            if res.error: return res
-
-            self.expect(res, 'RCR', '}', message="Expected '}'", err_type=UnclosedScopeError)
-            if res.error: return res
-
-            return res.success(ForEachNode(var_name, container, body, True))
-
-        if not self.current_tok.matches(Token(c.ID_OPS, ':')):
-            return res.failure(UnopenedScopeError(self.current_tok.pos_start,
-                                                  self.current_tok.pos_end,
-                                                  "Expected ':' or '{'"))
-        self.update(res)
-
-        body = res.register(self.statement())
-        if res.error: return res
+        body, _ = self.parse_statement_or_block(res)
+        if res.error:
+            return res
 
         return res.success(ForEachNode(var_name,
                                        container,
@@ -708,28 +666,9 @@ class Parser:
         condition = res.register(self.expr())
         if res.error: return res
 
-        self.expect(res, 'LCR', '{')
-        if not res.error:
-
-            self.expect_newline(res)
-            if res.error: return res
-
-            body = res.register(self.statements())
-            if res.error: return res
-
-            self.expect(res, 'RCR', '}', message="Expected '}'", err_type=UnclosedScopeError)
-            if res.error: return res
-
-            return res.success(WhileNode(condition,
-                                         body,
-                                         True))
-
-        res.error = None
-        self.expect_operator(res, ':', err_type=UnopenedScopeError)
-        if res.error: return res
-
-        body = res.register(self.statement())
-        if res.error: return res
+        body, _ = self.parse_statement_or_block(res)
+        if res.error:
+            return res
 
         return res.success(WhileNode(condition,
                                      body,
@@ -741,56 +680,20 @@ class Parser:
         condition = res.register(self.expr())
         if res.error: return res
 
-        self.expect(res, 'LCR', '{')
-        if not res.error:
-
-            self.expect_newline(res)
-            if res.error: return res
-
-            body = res.register(self.statements())
-            if res.error: return res
-
-            self.expect(res, 'RCR', '}', message="Expected '}'", err_type=UnclosedScopeError)
-            if res.error: return res
-
-            return res.success(WhenNode(condition,
-                                        body,
-                                        True))
-
-        res.error = None
-        self.expect_operator(res, ':', err_type=UnopenedScopeError)
-        if res.error: return res
-
-        body = res.register(self.statement())
-        if res.error: return res
+        body, _ = self.parse_statement_or_block(res)
+        if res.error:
+            return res
 
         return res.success(WhenNode(condition,
                                     body,
-                                    False))
+                                    True))
 
     def defer_expr(self):
         res = ParseResult()
 
-        if self.current_tok.type == 'LCR':
-            self.update(res)
-
-            self.expect_newline(res)
-            if res.error: return res
-
-            body = res.register(self.statements())
-            if res.error: return res
-
-            self.expect(res, 'RCR', '}', message="Expected '}'", err_type=UnclosedScopeError)
-            if res.error: return res
-
-            return res.success(DeferNode(body,
-                                         True))
-
-        self.expect_operator(res, ':', err_type=UnopenedScopeError)
-        if res.error: return res
-
-        body = res.register(self.statement())
-        if res.error: return res
+        body, _ = self.parse_statement_or_block(res)
+        if res.error:
+            return res
 
         return res.success(DeferNode(body,
                                      False))
@@ -800,49 +703,18 @@ class Parser:
 
         try_tok = self.previous_tok
 
-        if self.accept_token_type(res, 'LCR'):
-
-            self.expect_newline(res)
-            if res.error: return res
-
-            try_node = res.register(self.statements())
-            if res.error: return res
-
-            self.expect(res, 'RCR', '}', message="Expected '}'", err_type=UnclosedScopeError)
-            if res.error: return res
-
-        elif self.accept_operator(res, ':'):
-            try_node = res.register(self.statement())
-            if res.error: return res
-
-        else: return res.failure(UnopenedScopeError(self.current_tok.pos_start,
-                                                    self.current_tok.pos_end,
-                                                    "Expected ':' or '{'"))
+        try_node, _ = self.parse_statement_or_block(res)
+        if res.error:
+            return res
 
         self.consume_newlines(res)
 
         self.expect_keyword(res, 'catch')
         if res.error: return res
 
-        if self.current_tok.type == 'LCR':
-            self.update(res)
-
-            self.expect_newline(res)
-            if res.error: return res
-
-            catch_node = res.register(self.statements())
-            if res.error: return res
-
-            self.expect(res, 'RCR', '}', message="Expected '}'", err_type=UnclosedScopeError)
-            if res.error: return res
-
-        elif self.accept_operator(res, ':'):
-            catch_node = res.register(self.statement())
-            if res.error: return res
-
-        else: return res.failure(UnopenedScopeError(self.current_tok.pos_start,
-                                                    self.current_tok.pos_end,
-                                                    "Expected ':' or '{'"))
+        catch_node, _ = self.parse_statement_or_block(res)
+        if res.error:
+            return res
 
         return res.success(ErrorHandlerNode(try_tok, try_node, catch_node))
 
@@ -962,6 +834,9 @@ class Parser:
 
         # fail if no injection operator
         # TODO: why is this here?
+        # UPDATE: when I comment this call out, I get:
+        # FAILED tests/test_parser.py::TestParserErrors::test_invalid_struct_7 - AttributeError: 'NoneType' object has no attribute 'advance_count'
+        # FAILED tests/test_parser.py::TestParserErrors::test_invalid_struct_8 - AttributeError: 'NoneType' object has no attribute 'advance_count'
         return res.failure(InvalidSyntaxError(self.current_tok.pos_start,
                                               self.current_tok.pos_end,
                                               f"Expected newline"))
@@ -1086,8 +961,35 @@ class Parser:
                                  self.current_tok.pos_end,
                                  message))
 
-    def accept_body(res):
-        pass
+    def parse_block(self, res):
+        self.expect(res, 'LCR', '{', err_type=UnopenedScopeError)
+        if res.error:
+            return None
+
+        self.expect_newline(res)
+        if res.error:
+            return None
+
+        body = res.register(self.statements())
+        if res.error:
+            return None
+
+        self.expect(res, 'RCR', '}', err_type=UnclosedScopeError)
+        if res.error:
+            return None
+
+        return body
+
+    def parse_statement_or_block(self, res):
+        if self.current_tok.type == 'LCR':
+            body = self.parse_block(res)
+            return body, True
+
+        self.expect_operator(res, ':', err_type=UnopenedScopeError)
+        if res.error:
+            return None, None
+
+        return res.register(self.statement()), False
 
     def consume_newlines(self, res):
         while self.current_tok.type == 'BREAK': self.update(res)
