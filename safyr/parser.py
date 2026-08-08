@@ -20,6 +20,10 @@ class Parser:
         self.previous_tok = self.current_tok = None
         self.advance()
 
+    @staticmethod
+    def process_function_not_defined(res, func):
+        raise Exception(f'No process function defined for {func}.')
+
     def update(self, res):
         res.register_advancement()
         self.advance()
@@ -117,9 +121,8 @@ class Parser:
         # use keyword handler
         if self.accept_keyword(res, 'use'):
             # use must be followed by an identifier
-            self.expect_token_type(res, c.ID_SYM)
+            fname = self.expect_token_type(res, c.ID_SYM)
             if res.error: return res
-            fname = self.previous_tok
 
             # use must be followed by newline
             if self.accept_newline(res) or self.current_tok.matches(Token('EOF', None)): pass
@@ -138,10 +141,8 @@ class Parser:
 
         # del keyword handler
         if self.accept_keyword(res, 'del'):
-            self.expect_token_type(res, c.ID_SYM)
+            to_delete = self.expect_token_type(res, c.ID_SYM)
             if res.error: return res
-
-            to_delete = self.previous_tok
             return res.success(DeleteNode(to_delete))
 
         # continue keyword handler
@@ -179,12 +180,10 @@ class Parser:
 
         # warning about unnecessary var keyword
         if self.accept_optional(res, c.ID_KWD, 'var'):
-            if not self.static:
-                warn_msg = f'kwd <var> has no effect'
+            if not self.static: warn_msg = f'kwd <var> has no effect'
             statictype = 'var'
 
         # check for explicit type definition
-        # if self.current_tok.value in ['int', 'flt', 'str', 'lst', 'map']:
         if self.accept_one_optional(res, ['int', 'flt', 'str', 'lst', 'map']):
             statictype = self.previous_tok.value
 
@@ -202,11 +201,8 @@ class Parser:
 
         # regular named variable assignment
         if self.current_tok.type == c.ID_SYM and self.peek().type == c.ID_ASG:
-            var_name = self.current_tok
-            self.update(res)
-
-            op_tok = self.current_tok
-            self.update(res)
+            var_name = self.expect_token_type(res, c.ID_SYM)
+            op_tok = self.expect_token_type(res, c.ID_ASG)
 
             expr = res.register(self.expr())
             if res.error: return res
@@ -234,8 +230,7 @@ class Parser:
         # assignment or augassignment operator
         if self.current_tok.type == c.ID_ASG:
 
-            op_tok = self.current_tok
-            self.update(res)
+            op_tok = self.accept_token_type(res, c.ID_ASG)
 
             expr = res.register(self.expr())
             if res.error: return res
@@ -254,8 +249,8 @@ class Parser:
         res = ParseResult()
 
         # check for not expression
-        if self.accept_token_type(res, 'NOT'):
-            op_tok = self.previous_tok
+        op_tok = self.accept_token_type(res, 'NOT')
+        if op_tok:
             node = res.register(self.comp_expr())
             if res.error: return res
             return res.success(UnaryOpNode(op_tok, node))
@@ -302,17 +297,14 @@ class Parser:
         if self.accept_token_type(res, 'LPR'):
             arg_nodes = []
 
-            if not self.accept_token_type(res, 'RBR'):
-                while self.current_tok.type != 'RPR':
-                    arg_nodes.append(res.register(self.expr()))
-                    if res.error: return res
+            while not self.accept_token_type(res, 'RPR'):
+                arg_nodes.append(res.register(self.expr()))
+                if res.error: return res
 
-                    if self.current_tok.type == 'EOF':
-                        return res.failure(PrematureEOFError(self.current_tok.pos_start,
-                                                             self.current_tok.pos_end,
-                                                             f"Expected ')'"))
-
-                self.update(res)
+                if self.current_tok.type == 'EOF':
+                    return res.failure(PrematureEOFError(self.current_tok.pos_start,
+                                                         self.current_tok.pos_end,
+                                                         f"Expected ')'"))
 
             return res.success(CallNode(atom, arg_nodes))
 
@@ -354,10 +346,9 @@ class Parser:
             return self.try_process_keyword(res, 'map_expr')
 
         # register conditional chain
+        # TODO: accept is not working here
         elif tok.matches(Token(c.ID_KWD, '?')) or tok.matches(Token(c.ID_KWD, 'if')):
-            if_expr = res.register(self.if_expr())
-            if res.error: return res
-            return res.success(if_expr)
+            return self.try_process_keyword(res, 'if_expr')
 
         # register for loop
         elif self.accept_keyword(res, 'for'):
@@ -400,10 +391,6 @@ class Parser:
         val = res.register(func_pointer())
         if res.error: return res
         return res.success(val)
-
-    @staticmethod
-    def process_function_not_defined(res, func):
-        raise Exception(f'No process function defined for {func}.')
 
     def map_expr(self):
         res = ParseResult()
@@ -469,6 +456,27 @@ class Parser:
         return res.success(IfNode(cases,
                                   else_case))
 
+    def if_expr_cases(self, case_keywords):
+        res = ParseResult()
+        cases = []
+        else_case = None
+
+        self.expect_one(res, case_keywords)
+        if res.error: return res
+
+        condition = res.register(self.expr())
+        if res.error: return res
+
+        body, multiline = self.parse_statement_or_block(res)
+        if res.error: return res
+        cases.append((condition, body, multiline))
+
+        new_cases, else_case = self.parse_cases(res)
+        if res.error: return res
+        cases.extend(new_cases)
+
+        return res.success((cases, else_case))
+
     def if_expr_b(self):
         return self.if_expr_cases(('!?', 'elif'))
 
@@ -476,32 +484,12 @@ class Parser:
         res = ParseResult()
         else_case = None
 
-        # grab else block
-        if self.current_tok.value in ('!', 'else'):
-            self.update(res)
+        if self.accept_one(res, ['!', 'else']):
 
-            if self.current_tok.type == 'LCR':
-                self.update(res)
+            body, multiline = self.parse_statement_or_block(res)
+            if res.error: return res
 
-                self.expect_newline(res)
-                if res.error: return res
-
-                statements = res.register(self.statements())
-                if res.error: return res
-                else_case = (statements, True)
-
-                self.expect(res, 'RCR', '}', message="Expected '}'", err_type=UnclosedScopeError)
-                if res.error: return res
-
-            else:
-                self.expect_operator(res, ':')
-                # TODO: I added this line during editing. All tests were passing beforehand.
-                # Does that mean I haven't tested some case?
-                if res.error: return res
-
-                expr = res.register(self.expr())
-                if res.error: return res
-                else_case = (expr, False)
+            else_case = (body, multiline)
 
         return res.success(else_case)
 
@@ -521,60 +509,11 @@ class Parser:
 
         return res.success((cases, else_case))
 
-    def if_expr_cases(self, case_keywords):
-        res = ParseResult()
-        cases = []
-        else_case = None
-
-        self.expect_one(res, case_keywords)
-        if res.error: return res
-
-        condition = res.register(self.expr())
-        if res.error: return res
-
-        if self.current_tok.type == 'LCR':
-            self.update(res)
-
-            self.expect_newline(res)
-            if res.error: return res
-
-            statements = res.register(self.statements())
-            if res.error: return res
-            cases.append((condition, statements, True))
-
-            if self.current_tok.type == 'RCR':
-                self.update(res)
-
-                all_cases = res.register(self.if_expr_b_or_c())
-                if res.error: return res
-
-                new_cases, else_case = all_cases
-                cases.extend(new_cases)
-            else: return res.failure(UnclosedScopeError(self.current_tok.pos_start,
-                                                        self.current_tok.pos_end,
-                                                        "Expected '}'"))
-
-        else:
-            self.expect_operator(res, ':', err_type=UnopenedScopeError)
-            if res.error: return res
-
-            expr = res.register(self.statement())
-            if res.error: return res
-            cases.append((condition, expr, False))
-
-            all_cases = res.register(self.if_expr_b_or_c())
-            if res.error: return res
-            new_cases, else_case = all_cases
-            cases.extend(new_cases)
-
-        return res.success((cases, else_case))
-
     def for_expr(self):
         res = ParseResult()
 
-        self.expect_token_type(res, c.ID_SYM)
+        var_name = self.expect_token_type(res, c.ID_SYM)
         if res.error: return res
-        var_name = self.previous_tok
 
         self.expect(res, 'ASG', '=')
         if res.error: return res
@@ -607,10 +546,8 @@ class Parser:
     def foreach_expr(self):
         res = ParseResult()
 
-        self.expect_token_type(res, c.ID_SYM)
+        var_name = self.expect_token_type(res, c.ID_SYM)
         if res.error: return res
-
-        var_name = self.previous_tok
 
         self.expect_keyword(res, 'in')
         if res.error: return res
@@ -633,8 +570,7 @@ class Parser:
         if res.error: return res
 
         body, _ = self.parse_statement_or_block(res)
-        if res.error:
-            return res
+        if res.error: return res
 
         return res.success(WhileNode(condition,
                                      body,
@@ -647,8 +583,7 @@ class Parser:
         if res.error: return res
 
         body, _ = self.parse_statement_or_block(res)
-        if res.error:
-            return res
+        if res.error: return res
 
         return res.success(WhenNode(condition,
                                     body,
@@ -658,8 +593,7 @@ class Parser:
         res = ParseResult()
 
         body, _ = self.parse_statement_or_block(res)
-        if res.error:
-            return res
+        if res.error: return res
 
         return res.success(DeferNode(body,
                                      False))
@@ -706,8 +640,8 @@ class Parser:
     def interface_def(self):
         res = ParseResult()
 
-        self.expect_token_type(res, c.ID_SYM)
-        var_name_tok = self.previous_tok
+        var_name_tok = self.expect_token_type(res, c.ID_SYM)
+        if res.error: return res
 
         self.expect(res, 'INJ', '<~', message=f"Expected '<~'")
         if res.error: return res
@@ -722,9 +656,7 @@ class Parser:
     def struct_def(self):
         res = ParseResult()
 
-        if self.accept_token_type(res, c.ID_SYM):
-            var_name_tok = self.previous_tok
-        else: var_name_tok = None
+        var_name_tok = self.accept_token_type(res, c.ID_SYM) or None
 
         arg_name_toks = self.parse_arg_list(res)
         if res.error: return res
@@ -890,9 +822,7 @@ class Parser:
             return body, True
 
         self.expect_operator(res, ':', err_type=UnopenedScopeError)
-        if res.error:
-            return None, None
-
+        if res.error: return None, None
         return res.register(self.statement()), False
 
     def parse_arg_list(self, res):
@@ -933,6 +863,11 @@ class Parser:
                                            self.current_tok.pos_end,
                                            "Expected newline"))
             return
+
+    def parse_cases(self, res):
+        all_cases = res.register(self.if_expr_b_or_c())
+        if res.error: return None, None
+        return all_cases
 
     def consume_newlines(self, res):
         count = 0

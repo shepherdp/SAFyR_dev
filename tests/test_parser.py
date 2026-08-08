@@ -240,7 +240,7 @@ class TestParserErrors(unittest.TestCase):
             if e: raise e
 
     def test_invalid_else_1(self):
-        with self.assertRaises(InvalidSyntaxError):
+        with self.assertRaises(UnopenedScopeError):
             context.symbol_table = get_sym_table()
             e = Parser(Lexer().tokenize('? 1==1:1\n! 1').value).parse().error
             if e: raise e
@@ -252,7 +252,7 @@ class TestParserErrors(unittest.TestCase):
             if e: raise e
 
     def test_invalid_else_3(self):
-        with self.assertRaises(InvalidSyntaxError):
+        with self.assertRaises(UnopenedScopeError):
             context.symbol_table = get_sym_table()
             e = Parser(Lexer().tokenize('? 1==1:1\n! 1==1:').value).parse().error
             if e: raise e
