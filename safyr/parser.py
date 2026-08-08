@@ -699,10 +699,8 @@ class Parser:
         res = ParseResult()
 
         try_tok = self.previous_tok
-
         try_node, _ = self.parse_statement_or_block(res)
-        if res.error:
-            return res
+        if res.error: return res
 
         self.consume_newlines(res)
 
@@ -710,8 +708,7 @@ class Parser:
         if res.error: return res
 
         catch_node, _ = self.parse_statement_or_block(res)
-        if res.error:
-            return res
+        if res.error: return res
 
         return res.success(ErrorHandlerNode(try_tok, try_node, catch_node))
 
@@ -729,26 +726,8 @@ class Parser:
         self.expect_token_type(res, 'INJ')
         if res.error: return res
 
-            # statements start on next line
-        if self.accept_token_type(res, 'LCR'):
-            single_line = False
-
-            self.expect_newline(res)
-            if res.error: return res
-
-            body = res.register(self.statements())
-            if res.error: return res
-
-            # function definition must end with if
-            self.expect(res, 'RCR', '}', message="Expected '}'", err_type=UnclosedScopeError)
-
-        # one-line functions auto-return, so ignore the return keyword if it was included
-        else:
-            single_line = True
-            self.accept_keyword(res, 'return')
-
-            body = res.register(self.expr())
-            if res.error: return res
+        body, single_line = self.parse_function_body(res)
+        if res.error: return res
 
         return res.success(FunctionDefinitionNode(var_name_tok,
                                                   arg_name_toks,
@@ -781,8 +760,9 @@ class Parser:
         arg_name_toks = self.parse_arg_list(res)
         if res.error: return res
 
-        body = self.parse_definition_body(res)
+        body = self.parse_struct_body(res)
         if res.error: return res
+
         return res.success(StructDefinitionNode(var_name_tok,
                                                 arg_name_toks,
                                                 body,
@@ -909,8 +889,6 @@ class Parser:
                                  message))
 
     def parse_block(self, res):
-        self.expect(res, 'LCR', '{', err_type=UnopenedScopeError)
-        if res.error: return None
 
         self.expect_newline(res)
         if res.error: return None
@@ -923,15 +901,12 @@ class Parser:
 
         return body
 
-    def parse_statement_or_block(self, res, returns=False):
-        if self.current_tok.type == 'LCR':
+    def parse_statement_or_block(self, res):
+        if self.accept_token_type(res, 'LCR'):
             body = self.parse_block(res)
             return body, True
 
-        if returns:
-            self.expect_keyword(res, 'return', err_type=UnopenedScopeError)
-        else:
-            self.expect_operator(res, ':', err_type=UnopenedScopeError)
+        self.expect_operator(res, ':', err_type=UnopenedScopeError)
         if res.error:
             return None, None
 
@@ -950,20 +925,25 @@ class Parser:
 
         return arg_name_toks
 
-    def parse_definition_body(self, res):
+    def parse_function_body(self, res):
+        if self.accept_token_type(res, 'LCR'):
+
+            body = self.parse_block(res)
+            return body, False
+
+        self.accept_keyword(res, 'return')
+
+        return res.register(self.statement()), True
+
+    def parse_struct_body(self, res):
 
         if self.accept_token_type(res, 'LCR'):
-        
-            # statements start on next line
-            if self.accept_newline(res):
-                body = res.register(self.statements())
-                if res.error: return None
 
-                self.expect(res, 'RCR', '}', message="Expected '}'", err_type=UnclosedScopeError)
-                if res.error: return None
+            body = self.parse_block(res)
+            if res.error: return res
 
-                # return multi line function definition
-                return body
+            # return multi line function definition
+            return body
 
         else:
             res.failure(InvalidSyntaxError(self.current_tok.pos_start,
