@@ -56,8 +56,6 @@ class Parser:
         # this makes sure any scopes still open at EOF throw an error
         if res.resid_err:
             return res.failure(res.resid_err)
-        if res.error:
-            return res
         return res
 
     def statements(self):
@@ -76,23 +74,16 @@ class Parser:
         e = None
 
         # read in any additional statements
-        # TODO: REFACTOR THIS THIS IS AWFUL
+        # TODO: make this clearer
         while True:
-            newline_count = 0
-            while self.current_tok.type == 'BREAK':
-                self.update(res)
+            newline_count = self.consume_newlines(res)
+            if any([isinstance(statements[-1], UseNode),
+                    isinstance(statements[-1], IfNode)]):
                 newline_count += 1
-            if isinstance(statements[-1], UseNode):
-                newline_count += 1
-            if isinstance(statements[-1], IfNode):
-                newline_count += 1
-            if newline_count == 0:
+            if newline_count == 0 or self.current_tok.type == 'EOF':
                 more_statements = False
-            if self.current_tok.type == 'EOF':
-                more_statements = False
-                # if e: return res.failure(e)
-
             if not more_statements: break
+
             statement, e = res.try_register(self.statement())
             if not statement:
                 self.reverse(res.to_reverse_count)
@@ -101,6 +92,7 @@ class Parser:
                 continue
             else:
                 res.resid_err = None
+
             statements.append(statement)
 
         retidx = -1
@@ -929,4 +921,8 @@ class Parser:
             return
 
     def consume_newlines(self, res):
-        while self.current_tok.type == 'BREAK': self.update(res)
+        count = 0
+        while self.current_tok.type == 'BREAK':
+            self.update(res)
+            count += 1
+        return count
