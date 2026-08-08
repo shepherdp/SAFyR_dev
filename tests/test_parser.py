@@ -600,13 +600,13 @@ class TestParserErrors(unittest.TestCase):
             if e: raise e
 
     def test_invalid_struct_2(self):
-        with self.assertRaises(InvalidSyntaxError):
+        with self.assertRaises(UnopenedScopeError):
             context.symbol_table = get_sym_table()
             e = Parser(Lexer().tokenize('::add ]').value).parse().error
             if e: raise e
 
     def test_invalid_struct_3(self):
-        with self.assertRaises(InvalidSyntaxError):
+        with self.assertRaises(UnopenedScopeError):
             context.symbol_table = get_sym_table()
             e = Parser(Lexer().tokenize('::add <~ 1 + 1').value).parse().error
             if e: raise e

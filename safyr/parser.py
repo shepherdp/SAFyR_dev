@@ -720,60 +720,40 @@ class Parser:
 
         if self.accept_token_type(res, c.ID_SYM):
             var_name_tok = self.previous_tok
-            self.expect_token_type(res, 'LBR', err_type=UnopenedScopeError)
-            if res.error: return res
+        else: var_name_tok = None
 
-        else:
-            var_name_tok = None
-            self.expect_token_type(res, 'LBR', err_type=UnopenedScopeError)
-            if res.error: return res
-
-        arg_name_toks = []
-        while self.accept_token_type(res, c.ID_SYM):
-            arg_name_toks.append(self.previous_tok)
-
-        self.expect_token_type(res, 'RBR', UnclosedScopeError)
+        arg_name_toks = self.parse_arg_list(res)
         if res.error: return res
 
         # <~ follows optional brackets
-        if self.accept_token_type(res, 'INJ'):
+        self.expect_token_type(res, 'INJ')
+        if res.error: return res
 
             # statements start on next line
-            if self.current_tok.type == 'LCR':
-                self.update(res)
+        if self.accept_token_type(res, 'LCR'):
+            single_line = False
 
-                self.expect_newline(res)
-                if res.error: return res
+            self.expect_newline(res)
+            if res.error: return res
 
-                body = res.register(self.statements())
-                if res.error: return res
+            body = res.register(self.statements())
+            if res.error: return res
 
-                # function definition must end with if
-                self.expect(res, 'RCR', '}', message="Expected '}'", err_type=UnclosedScopeError)
+            # function definition must end with if
+            self.expect(res, 'RCR', '}', message="Expected '}'", err_type=UnclosedScopeError)
 
-                # return multi line function definition
-                return res.success(FunctionDefinitionNode(var_name_tok,
-                                                          arg_name_toks,
-                                                          body,
-                                                          False))
-
-            # one-line functions auto-return, so ignore the return keyword if it was included
-            # if self.current_tok.matches(Token(c.ID_KWD, 'return')):
-            #     self.update(res)
+        # one-line functions auto-return, so ignore the return keyword if it was included
+        else:
+            single_line = True
             self.accept_keyword(res, 'return')
 
             body = res.register(self.expr())
             if res.error: return res
 
-            return res.success(FunctionDefinitionNode(var_name_tok,
-                                                      arg_name_toks,
-                                                      body,
-                                                      True))
-
-        # fail if no injection operator
-        return res.failure(InvalidSyntaxError(self.current_tok.pos_start,
-                                              self.current_tok.pos_end,
-                                              f"Expected '<~'"))
+        return res.success(FunctionDefinitionNode(var_name_tok,
+                                                  arg_name_toks,
+                                                  body,
+                                                  single_line))
 
     def interface_def(self):
         res = ParseResult()
@@ -796,47 +776,17 @@ class Parser:
 
         if self.accept_token_type(res, c.ID_SYM):
             var_name_tok = self.previous_tok
+        else: var_name_tok = None
 
-            self.expect_token_type(res, 'LBR')
-            if res.error: return res
-
-        else:
-            var_name_tok = None
-            self.expect_token_type(res, 'LBR', UnopenedScopeError)
-            if res.error: return res
-
-        arg_name_toks = []
-        while self.accept_token_type(res, c.ID_SYM):
-            arg_name_toks.append(self.previous_tok)
-
-        self.expect(res, 'RBR', ']', message=f"Expected identifier or ']'", err_type=UnclosedScopeError)
+        arg_name_toks = self.parse_arg_list(res)
         if res.error: return res
 
-        # { follows optional brackets
-        if self.accept_token_type(res, 'LCR'):
-
-            # statements start on next line
-            if self.accept_newline(res):
-                body = res.register(self.statements())
-                if res.error: return res
-
-                self.expect(res, 'RCR', '}', message="Expected '}'", err_type=UnclosedScopeError)
-                if res.error: return res
-
-                # return multi line function definition
-                return res.success(StructDefinitionNode(var_name_tok,
-                                                        arg_name_toks,
-                                                        body,
-                                                        True))
-
-        # fail if no injection operator
-        # TODO: why is this here?
-        # UPDATE: when I comment this call out, I get:
-        # FAILED tests/test_parser.py::TestParserErrors::test_invalid_struct_7 - AttributeError: 'NoneType' object has no attribute 'advance_count'
-        # FAILED tests/test_parser.py::TestParserErrors::test_invalid_struct_8 - AttributeError: 'NoneType' object has no attribute 'advance_count'
-        return res.failure(InvalidSyntaxError(self.current_tok.pos_start,
-                                              self.current_tok.pos_end,
-                                              f"Expected newline"))
+        body = self.parse_definition_body(res)
+        if res.error: return res
+        return res.success(StructDefinitionNode(var_name_tok,
+                                                arg_name_toks,
+                                                body,
+                                                True))
 
     # general binop handler
     # continues as long as it keeps seeing a token that it expects after
@@ -960,33 +910,66 @@ class Parser:
 
     def parse_block(self, res):
         self.expect(res, 'LCR', '{', err_type=UnopenedScopeError)
-        if res.error:
-            return None
+        if res.error: return None
 
         self.expect_newline(res)
-        if res.error:
-            return None
+        if res.error: return None
 
         body = res.register(self.statements())
-        if res.error:
-            return None
+        if res.error: return None
 
         self.expect(res, 'RCR', '}', err_type=UnclosedScopeError)
-        if res.error:
-            return None
+        if res.error: return None
 
         return body
 
-    def parse_statement_or_block(self, res):
+    def parse_statement_or_block(self, res, returns=False):
         if self.current_tok.type == 'LCR':
             body = self.parse_block(res)
             return body, True
 
-        self.expect_operator(res, ':', err_type=UnopenedScopeError)
+        if returns:
+            self.expect_keyword(res, 'return', err_type=UnopenedScopeError)
+        else:
+            self.expect_operator(res, ':', err_type=UnopenedScopeError)
         if res.error:
             return None, None
 
         return res.register(self.statement()), False
+
+    def parse_arg_list(self, res):
+        self.expect_token_type(res, 'LBR', err_type=UnopenedScopeError)
+        if res.error: return res
+
+        arg_name_toks = []
+        while self.accept_token_type(res, c.ID_SYM):
+            arg_name_toks.append(self.previous_tok)
+
+        self.expect(res, 'RBR', ']', message=f"Expected identifier or ']'", err_type=UnclosedScopeError)
+        if res.error: return res
+
+        return arg_name_toks
+
+    def parse_definition_body(self, res):
+
+        if self.accept_token_type(res, 'LCR'):
+        
+            # statements start on next line
+            if self.accept_newline(res):
+                body = res.register(self.statements())
+                if res.error: return None
+
+                self.expect(res, 'RCR', '}', message="Expected '}'", err_type=UnclosedScopeError)
+                if res.error: return None
+
+                # return multi line function definition
+                return body
+
+        else:
+            res.failure(InvalidSyntaxError(self.current_tok.pos_start,
+                                           self.current_tok.pos_end,
+                                           "Expected newline"))
+            return
 
     def consume_newlines(self, res):
         while self.current_tok.type == 'BREAK': self.update(res)
