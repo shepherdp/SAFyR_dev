@@ -763,99 +763,113 @@ class Parser:
         if self.current_tok.type != token_type or self.current_tok.value != token_val:
             return False
         self.update(res)
-        return True
+        return self.previous_tok
 
     def accept_newline(self,  res):
         if self.current_tok.type != 'BREAK' or self.current_tok.value is not None:
             return False
         self.update(res)
-        return True
+        return self.previous_tok
 
     def accept_keyword(self, res, token_val):
         if self.current_tok.type != c.ID_KWD or self.current_tok.value != token_val:
             return False
         self.update(res)
-        return True
+        return self.previous_tok
 
     def accept_operator(self, res, token_val):
         if self.current_tok.type != c.ID_OPS or self.current_tok.value != token_val:
             return False
         self.update(res)
-        return True
+        return self.previous_tok
 
     def accept_token_type(self, res, token_type):
         if self.current_tok.type != token_type:
             return False
         self.update(res)
-        return True
+        return self.previous_tok
 
     def accept_one_token_type(self, res, token_types):
         if self.current_tok.type not in token_types:
             return False
         self.update(res)
-        return True
+        return self.previous_tok
 
     def accept_one(self, res, token_vals):
         if self.current_tok.value not in token_vals:
             return False
         self.update(res)
-        return True
+        return self.previous_tok
 
     def accept_optional(self, res, token_type, token_val):
         if self.current_tok.type != token_type or self.current_tok.value != token_val:
             return False
         self.update(res)
-        return True
+        return self.previous_tok
 
     def accept_one_optional(self, res, token_vals):
         if self.current_tok.value not in token_vals:
             return False
         self.update(res)
-        return True
+        return self.previous_tok
 
     def expect(self, res, token_type, token_val, message=None, err_type=InvalidSyntaxError):
-        if not self.accept(res, token_type, token_val):
+        tok = self.accept(res, token_type, token_val)
+        if not tok:
             message = f"Expected '{token_val}'" if message is None else message
             res.failure(err_type(self.current_tok.pos_start,
                                  self.current_tok.pos_end,
                                  message))
+        return tok
 
     def expect_newline(self, res):
-        if not self.accept_newline(res):
+        tok = self.accept_newline(res)
+        if not tok:
             res.failure(InvalidSyntaxError(self.current_tok.pos_start,
                                            self.current_tok.pos_end,
                                            "Expected newline"))
+        return tok
 
     def expect_keyword(self, res, token_val, err_type=InvalidSyntaxError):
-        if not self.accept_keyword(res, token_val):
+        tok = self.accept_keyword(res, token_val)
+        if not tok:
             res.failure(err_type(self.current_tok.pos_start,
                                  self.current_tok.pos_end,
                                  f"Expected keyword '{token_val}'"))
+        return tok
 
     def expect_operator(self, res, token_val, err_type=InvalidSyntaxError):
-        if not self.accept_operator(res, token_val):
+        tok = self.accept_operator(res, token_val)
+        if not tok:
             res.failure(err_type(self.current_tok.pos_start,
                                  self.current_tok.pos_end,
                                  f"Expected operator '{token_val}'"))
+        return tok
 
     def expect_token_type(self, res, token_type, err_type=InvalidSyntaxError):
-        if not self.accept_token_type(res, token_type):
+        tok = self.accept_token_type(res, token_type)
+        if not tok:
             res.failure(err_type(self.current_tok.pos_start,
                                  self.current_tok.pos_end,
                                  f"Expected token of type '{token_type}'"))
+        return tok
 
     def expect_one_token_type(self, res, token_types, err_type=InvalidSyntaxError):
-        if not self.accept_one_token_type(res, token_types):
+        tok = self.accept_one_token_type(res, token_types)
+        if not tok:
             res.failure(err_type(self.current_tok.pos_start,
                                  self.current_tok.pos_end,
                                  f"Expected type from: '{token_types}'"))
+        return tok
 
     def expect_one(self, res, token_vals, message=None, err_type=InvalidSyntaxError):
-        if not self.accept_one(res, token_vals):
+        tok = self.accept_one(res, token_vals)
+        if not tok:
             message = f"Expected one of: {token_vals}" if message is None else message
             res.failure(err_type(self.current_tok.pos_start,
                                  self.current_tok.pos_end,
                                  message))
+        return tok
 
     def parse_block(self, res):
 
