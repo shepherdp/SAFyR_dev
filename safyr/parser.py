@@ -198,21 +198,15 @@ class Parser:
 
         # try to read a function definition
         if self.accept_operator(res, ':'):
-            f = res.register(self.func_def())
-            if res.error: return res
-            return res.success(f)
+            return self.try_process_keyword(res, 'func_def')
 
         # try to read a struct definition
         if self.accept_operator(res, '::'):
-            s = res.register(self.struct_def())
-            if res.error: return res
-            return res.success(s)
+            return self.try_process_keyword(res, 'struct_def')
 
         # try to read an interface definition
         if self.accept(res, 'DOT', '.'):
-            i = res.register(self.interface_def())
-            if res.error: return res
-            return res.success(i)
+            return self.try_process_keyword(res, 'interface_def')
 
         # regular named variable assignment
         if self.current_tok.type == c.ID_SYM and self.peek().type == c.ID_ASG:
@@ -336,15 +330,6 @@ class Parser:
         res = ParseResult()
         tok = self.current_tok
 
-        # kwds = {'LBR': 'list_expr',
-        #         'LCR': 'map_expr',
-        #         'for: ': 'for_expr',
-        #         'foreach': 'foreach_expr',
-        #         'while': 'while_expr',
-        #         'when': 'when_expr',
-        #         'defer': 'defer_expr',
-        #         'try': 'try_expr'}
-
         # register number
         if self.accept_one_token_type(res, [c.ID_INT, c.ID_FLT]):
             return res.success(NumberNode(tok))
@@ -413,11 +398,6 @@ class Parser:
         # register struct definition
         elif self.accept_operator(res, '::'):
             return self.try_process_keyword(res, 'struct_def')
-
-        # else:
-        #     for kwd, func in kwds.items():
-        #         if self.accept_keyword(res, kwd):
-        #             return self.try_process_keyword(res, func)
 
         return res.failure(InvalidSyntaxError(tok.pos_start,
                                               tok.pos_end,
@@ -635,12 +615,10 @@ class Parser:
     def foreach_expr(self):
         res = ParseResult()
 
-        if self.current_tok.type != c.ID_SYM:
-            return res.failure(InvalidSyntaxError(self.current_tok.pos_start,
-                                                  self.current_tok.pos_end,
-                                                  f"Expected identifier"))
-        var_name = self.current_tok
-        self.update(res)
+        self.expect_token_type(res, c.ID_SYM)
+        if res.error: return res
+
+        var_name = self.previous_tok
 
         self.expect_keyword(res, 'in')
         if res.error: return res
@@ -649,8 +627,7 @@ class Parser:
         if res.error: return res
 
         body, _ = self.parse_statement_or_block(res)
-        if res.error:
-            return res
+        if res.error: return res
 
         return res.success(ForEachNode(var_name,
                                        container,
